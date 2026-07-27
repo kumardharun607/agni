@@ -1,0 +1,13 @@
+@props(['name', 'label', 'required' => false, 'value' => ''])
+<div>
+<label for="{{ $name }}" class="mb-2 block text-sm font-bold text-slate-700">
+{{ $label }}
+@if($required)<span class="text-red-600">*</span>@endif
+</label>
+<textarea
+id="{{ $name }}"
+name="{{ $name }}"
+rows="3"
+{{ $attributes->merge(['class' => 'w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm outline-none transition focus:border-orange-600 focus:ring-2 focus:ring-orange-200 resize-none']) }}
+>{{ $value }}</textarea>
+</div>
