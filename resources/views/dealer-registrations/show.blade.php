@@ -169,33 +169,104 @@ $directions = \App\Http\Controllers\DealerRegistration\DealerRegistrationControl
 
 {{-- SECTION: Sales / Images --}}
 <div class="mb-10 overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-lg">
-<div class="border-b border-orange-200 bg-orange-50 px-5 py-4 sm:px-7">
-<h2 class="text-lg font-bold text-slate-800"><i class="bi bi-patch-check mr-2 text-orange-700"></i>Sales Officer &amp; Images</h2>
-</div>
-<div class="grid gap-5 p-5 sm:grid-cols-2 sm:p-7 lg:grid-cols-3">
-<div class="detail-item"><p class="detail-label">Sales Officer Name</p><p class="detail-value">{{ $dealer->so_approved_name ?: '-' }}</p></div>
-<div class="detail-item"><p class="detail-label">Sr. Marketing Manager (Manager Name)</p><p class="detail-value">{{ $dealer->manager_name ?: '-' }}</p></div>
-</div>
-<div class="grid gap-5 border-t border-slate-200 p-5 sm:grid-cols-2 sm:p-7">
-<div class="rounded-xl border border-slate-300 bg-slate-50 p-4 text-center">
-<p class="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">Shop Image</p>
-@if($dealer->shop_image_url)
-<img src="{{ $dealer->shop_image_url }}" class="mx-auto rounded-lg border border-slate-300" style="width:160px;height:120px;object-fit:cover;">
-@else
-<p class="text-xs text-slate-400">No image uploaded</p>
-@endif
-</div>
-<div class="rounded-xl border border-slate-300 bg-slate-50 p-4 text-center">
-<p class="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">Godown Image</p>
-@if($dealer->godown_image_url)
-<img src="{{ $dealer->godown_image_url }}" class="mx-auto rounded-lg border border-slate-300" style="width:160px;height:120px;object-fit:cover;">
-@else
-<p class="text-xs text-slate-400">No image uploaded</p>
-@endif
-</div>
-</div>
-</div>
+    <div class="border-b border-orange-200 bg-orange-50 px-5 py-4 sm:px-7">
+        <h2 class="text-lg font-bold text-slate-800">
+            <i class="bi bi-patch-check mr-2 text-orange-700"></i>
+            Sales Officer & Images
+        </h2>
+    </div>
 
+    {{-- Sales Officer --}}
+    <div class="grid gap-5 p-5 sm:grid-cols-2 sm:p-7">
+        <div class="detail-item">
+            <p class="detail-label">Sales Officer Name</p>
+            <p class="detail-value">
+                {{ $dealer->so_approved_name ?: '-' }}
+            </p>
+        </div>
+
+        <div class="detail-item">
+            <p class="detail-label">Sr. Marketing Manager (Manager Name)</p>
+            <p class="detail-value">
+                {{ $dealer->manager_name ?: '-' }}
+            </p>
+        </div>
+    </div>
+
+    {{-- Images --}}
+    <div class="grid gap-6 border-t border-slate-200 p-5 sm:grid-cols-2 sm:p-7">
+
+        {{-- SHOP IMAGE --}}
+        <div class="rounded-xl border border-slate-300 bg-slate-50 p-5 text-center">
+
+            <p class="mb-4 text-xs font-bold uppercase tracking-wider text-slate-500">
+                Shop Image
+            </p>
+
+            @if(!empty($dealer->shop_image))
+                <a href="{{ asset('storage/' . $dealer->shop_image) }}"
+                   target="_blank"
+                   class="inline-block">
+
+                    <img
+                        src="{{ asset('storage/' . $dealer->shop_image) }}"
+                        alt="Shop Image"
+                        class="mx-auto rounded-lg border border-slate-300 object-cover shadow-sm"
+                        style="width: 260px; height: 200px;"
+                        onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+                    >
+                </a>
+
+                <p class="mt-3 hidden text-sm font-medium text-red-500">
+                    Unable to load shop image.
+                </p>
+            @else
+                <div class="flex h-[200px] items-center justify-center">
+                    <p class="text-sm text-slate-400">
+                        No shop image uploaded
+                    </p>
+                </div>
+            @endif
+
+        </div>
+
+
+        {{-- GODOWN IMAGE --}}
+        <div class="rounded-xl border border-slate-300 bg-slate-50 p-5 text-center">
+
+            <p class="mb-4 text-xs font-bold uppercase tracking-wider text-slate-500">
+                Godown Image
+            </p>
+
+            @if(!empty($dealer->godown_image))
+                <a href="{{ asset('storage/' . $dealer->godown_image) }}"
+                   target="_blank"
+                   class="inline-block">
+
+                    <img
+                        src="{{ asset('storage/' . $dealer->godown_image) }}"
+                        alt="Godown Image"
+                        class="mx-auto rounded-lg border border-slate-300 object-cover shadow-sm"
+                        style="width: 260px; height: 200px;"
+                        onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+                    >
+                </a>
+
+                <p class="mt-3 hidden text-sm font-medium text-red-500">
+                    Unable to load godown image.
+                </p>
+            @else
+                <div class="flex h-[200px] items-center justify-center">
+                    <p class="text-sm text-slate-400">
+                        No godown image uploaded
+                    </p>
+                </div>
+            @endif
+
+        </div>
+
+    </div>
+</div>
 </div>
 </div>
 @endsection
