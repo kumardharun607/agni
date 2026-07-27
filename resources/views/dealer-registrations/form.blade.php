@@ -278,48 +278,163 @@ $directions = \App\Http\Controllers\DealerRegistration\DealerRegistrationControl
 
 {{-- SECTION: Images --}}
 <div class="overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-lg">
-<div class="border-b border-orange-200 bg-orange-50 px-5 py-4 sm:px-7">
-<h2 class="text-lg font-bold text-slate-800"><i class="bi bi-images mr-2 text-orange-700"></i>Shop &amp; Godown Images</h2>
-</div>
-<div class="grid gap-6 p-5 sm:grid-cols-2 sm:p-7">
+    <div class="border-b border-orange-200 bg-orange-50 px-5 py-4 sm:px-7">
+        <h2 class="text-lg font-bold text-slate-800">
+            <i class="bi bi-images mr-2 text-orange-700"></i>
+            Shop &amp; Godown Images
+        </h2>
+    </div>
 
-<div>
-<label class="mb-2 block text-sm font-bold text-slate-700">Shop Image {{ $dealer->exists ? '' : '(required)' }}</label>
-<input type="file" name="photo_upload1" id="photo_upload1" accept="image/jpeg,image/jpg,image/png,image/webp" class="mb-3 w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm outline-none focus:border-orange-600">
-<div class="flex flex-wrap items-start gap-4">
-@if($dealer->shop_image_url)
-<div>
-<p class="mb-1 text-xs font-semibold text-slate-500">Existing Image</p>
-<img src="{{ $dealer->shop_image_url }}" class="img-preview-fixed">
-</div>
-@endif
-<div id="shop_image_preview_wrap" class="hidden">
-<p class="mb-1 text-xs font-semibold text-slate-500">New Image</p>
-<img id="shop_image_preview" class="img-preview-fixed" src="">
-</div>
-</div>
-<p class="mt-2 text-xs text-slate-400">JPG, JPEG, PNG or WEBP. Maximum size 5 MB.</p>
-</div>
+    <div class="grid gap-6 p-5 sm:grid-cols-2 sm:p-7">
 
-<div>
-<label class="mb-2 block text-sm font-bold text-slate-700">Godown Image {{ $dealer->exists ? '' : '(required)' }}</label>
-<input type="file" name="photo_upload2" id="photo_upload2" accept="image/jpeg,image/jpg,image/png,image/webp" class="mb-3 w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm outline-none focus:border-orange-600">
-<div class="flex flex-wrap items-start gap-4">
-@if($dealer->godown_image_url)
-<div>
-<p class="mb-1 text-xs font-semibold text-slate-500">Existing Image</p>
-<img src="{{ $dealer->godown_image_url }}" class="img-preview-fixed">
-</div>
-@endif
-<div id="godown_image_preview_wrap" class="hidden">
-<p class="mb-1 text-xs font-semibold text-slate-500">New Image</p>
-<img id="godown_image_preview" class="img-preview-fixed" src="">
-</div>
-</div>
-<p class="mt-2 text-xs text-slate-400">JPG, JPEG, PNG or WEBP. Maximum size 5 MB.</p>
-</div>
+        {{-- SHOP IMAGE --}}
+        <div>
+            <label class="mb-2 block text-sm font-bold text-slate-700">
+                Shop Image {{ $dealer->exists ? '' : '(required)' }}
+            </label>
 
-</div>
+            <input
+                type="file"
+                name="photo_upload1"
+                id="photo_upload1"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                class="mb-3 w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm outline-none focus:border-orange-600"
+            >
+
+            <div class="flex flex-wrap items-start gap-4">
+
+                {{-- EXISTING SHOP IMAGE --}}
+                @if($dealer->exists && $dealer->shop_image)
+                    @php
+                        $shopImagePath = $dealer->shop_image;
+
+                        if (
+                            \Illuminate\Support\Str::startsWith($shopImagePath, ['http://', 'https://'])
+                        ) {
+                            $shopImageUrl = $shopImagePath;
+                        } elseif (
+                            \Illuminate\Support\Str::startsWith($shopImagePath, ['/storage/', 'storage/'])
+                        ) {
+                            $shopImageUrl = asset(ltrim($shopImagePath, '/'));
+                        } else {
+                            $shopImageUrl = asset('storage/' . ltrim($shopImagePath, '/'));
+                        }
+                    @endphp
+
+                    <div>
+                        <p class="mb-1 text-xs font-semibold text-slate-500">
+                            Existing Image
+                        </p>
+
+                        <img
+                            src="{{ $shopImageUrl }}"
+                            alt="Existing Shop Image"
+                            class="img-preview-fixed"
+                            onerror="this.style.display='none'; document.getElementById('shop-image-error').classList.remove('hidden');"
+                        >
+
+                        <p id="shop-image-error" class="hidden mt-2 text-xs font-semibold text-red-500">
+                            Shop image could not be loaded.
+                        </p>
+                    </div>
+                @endif
+
+                {{-- NEW SHOP IMAGE PREVIEW --}}
+                <div id="shop_image_preview_wrap" class="hidden">
+                    <p class="mb-1 text-xs font-semibold text-slate-500">
+                        New Image
+                    </p>
+
+                    <img
+                        id="shop_image_preview"
+                        class="img-preview-fixed"
+                        src=""
+                        alt="New Shop Image Preview"
+                    >
+                </div>
+
+            </div>
+
+            <p class="mt-2 text-xs text-slate-400">
+                JPG, JPEG, PNG or WEBP. Maximum size 5 MB.
+            </p>
+        </div>
+
+
+        {{-- GODOWN IMAGE --}}
+        <div>
+            <label class="mb-2 block text-sm font-bold text-slate-700">
+                Godown Image {{ $dealer->exists ? '' : '(required)' }}
+            </label>
+
+            <input
+                type="file"
+                name="photo_upload2"
+                id="photo_upload2"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                class="mb-3 w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm outline-none focus:border-orange-600"
+            >
+
+            <div class="flex flex-wrap items-start gap-4">
+
+                {{-- EXISTING GODOWN IMAGE --}}
+                @if($dealer->exists && $dealer->godown_image)
+                    @php
+                        $godownImagePath = $dealer->godown_image;
+
+                        if (
+                            \Illuminate\Support\Str::startsWith($godownImagePath, ['http://', 'https://'])
+                        ) {
+                            $godownImageUrl = $godownImagePath;
+                        } elseif (
+                            \Illuminate\Support\Str::startsWith($godownImagePath, ['/storage/', 'storage/'])
+                        ) {
+                            $godownImageUrl = asset(ltrim($godownImagePath, '/'));
+                        } else {
+                            $godownImageUrl = asset('storage/' . ltrim($godownImagePath, '/'));
+                        }
+                    @endphp
+
+                    <div>
+                        <p class="mb-1 text-xs font-semibold text-slate-500">
+                            Existing Image
+                        </p>
+
+                        <img
+                            src="{{ $godownImageUrl }}"
+                            alt="Existing Godown Image"
+                            class="img-preview-fixed"
+                            onerror="this.style.display='none'; document.getElementById('godown-image-error').classList.remove('hidden');"
+                        >
+
+                        <p id="godown-image-error" class="hidden mt-2 text-xs font-semibold text-red-500">
+                            Godown image could not be loaded.
+                        </p>
+                    </div>
+                @endif
+
+                {{-- NEW GODOWN IMAGE PREVIEW --}}
+                <div id="godown_image_preview_wrap" class="hidden">
+                    <p class="mb-1 text-xs font-semibold text-slate-500">
+                        New Image
+                    </p>
+
+                    <img
+                        id="godown_image_preview"
+                        class="img-preview-fixed"
+                        src=""
+                        alt="New Godown Image Preview"
+                    >
+                </div>
+
+            </div>
+
+            <p class="mt-2 text-xs text-slate-400">
+                JPG, JPEG, PNG or WEBP. Maximum size 5 MB.
+            </p>
+        </div>
+
+    </div>
 </div>
 
 <div class="flex flex-wrap justify-end gap-3 pb-10">
