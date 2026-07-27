@@ -94,22 +94,35 @@ class SalesStageController extends Controller
     public function import(Request $request)
     {
         $request->validate(['file' => 'required|file|mimes:csv,txt,xlsx,xls']);
-        $rows = $this->readCsv($request->file('file'));
-
+        try {
+            $rows = $this->readSpreadsheet($request->file('file'), [['Name', 'name']]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => collect($e->errors())->flatten()->first()], 422);
+            }
+            return back()->withErrors($e->errors());
+        }
         $count = 0;
         foreach ($rows as $row) {
-            $name = $this->csvValue($row, 'Name');
+            $name = $this->csvValue($row, 'Name') ?: $this->csvValue($row, 'name');
             if (! $name) {
                 continue;
             }
-            $this->service->firstOrCreate(['name' => $name]);
+            SalesStage::firstOrCreate(['name' => $name]);
             $count++;
         }
-
+        if ($count === 0) {
+            $message = 'No valid rows found to import. Check that the Name column has values.';
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 422);
+            }
+            return back()->withErrors(['file' => $message]);
+        }
         $message = "$count sales stages imported successfully.";
         if ($request->expectsJson()) {
             return response()->json(['success' => true, 'message' => $message]);
         }
+
         return redirect()->route('sales-stage.index')->with('success', $message);
     }
 }

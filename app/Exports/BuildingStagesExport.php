@@ -11,33 +11,21 @@ class BuildingStagesExport implements FromCollection, WithHeadings, WithMapping
 {
     public function collection()
     {
-        return BuildingStage::query()
-            ->select([
-                'id',
-                'name',
-                'created_at',
-            ])
-            ->orderBy('id', 'asc')
-            ->get();
+        return BuildingStage::orderBy('id')->get();
     }
 
     public function headings(): array
     {
-        return [
-            'S.No',
-            'Building Stage Name',
-            'Created At',
-        ];
+        return ['id', 'name', 'created_at', 'updated_at'];
     }
 
-    public function map($buildingStage): array
+    public function map($row): array
     {
         return [
-            $buildingStage->id,
-            $buildingStage->name,
-            $buildingStage->created_at
-                ? $buildingStage->created_at->format('d-m-Y h:i A')
-                : '-',
+            $row->id,
+            $row->name,
+            optional($row->created_at)?->toDateTimeString(),
+            optional($row->updated_at)?->toDateTimeString(),
         ];
     }
 }

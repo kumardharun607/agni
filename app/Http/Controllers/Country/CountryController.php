@@ -88,31 +88,35 @@ class CountryController extends Controller
     public function import(Request $request)
     {
         $request->validate(['file' => 'required|file|mimes:csv,txt,xlsx,xls']);
-
-        $ext = strtolower($request->file('file')->getClientOriginalExtension());
-        $count = 0;
-
-        if (in_array($ext, ['xlsx', 'xls'])) {
-            \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\CountryImport, $request->file('file'));
-            $count = 'file';
-            $message = 'Countries imported successfully.';
-        } else {
-            $rows = $this->readCsv($request->file('file'));
-            foreach ($rows as $row) {
-                $name = $this->csvValue($row, 'Name') ?: $this->csvValue($row, 'name') ?: $this->csvValue($row, 'country_name');
-                if (! $name) {
-                    continue;
-                }
-                $this->service->updateOrCreate(['name' => $name], ['code' => $this->csvValue($row, 'Code') ?: $this->csvValue($row, 'code')]);
-                $count++;
+        try {
+            $rows = $this->readSpreadsheet($request->file('file'), [['Name', 'name', 'country_name']]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => collect($e->errors())->flatten()->first()], 422);
             }
-            $message = "$count countries imported successfully.";
+            return back()->withErrors($e->errors());
         }
-
+        $count = 0;
+        foreach ($rows as $row) {
+            $name = $this->csvValue($row, 'Name') ?: $this->csvValue($row, 'name') ?: $this->csvValue($row, 'country_name');
+            if (! $name) {
+                continue;
+            }
+            $code = $this->csvValue($row, 'Code') ?: $this->csvValue($row, 'code');
+            $this->service->updateOrCreate(['name' => $name], ['code' => $code]);
+            $count++;
+        }
+        if ($count === 0) {
+            $message = 'No valid rows found to import. Check that the Name column has values.';
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 422);
+            }
+            return back()->withErrors(['file' => $message]);
+        }
+        $message = "$count countries imported successfully.";
         if ($request->expectsJson()) {
             return response()->json(['success' => true, 'message' => $message]);
         }
-
         return redirect()->route('countries.index')->with('success', $message);
     }
 }

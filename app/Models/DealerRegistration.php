@@ -101,8 +101,11 @@ class DealerRegistration extends Model
         if (!$this->photo_upload1) {
             return null;
         }
-
-        return asset('storage/' . ltrim($this->photo_upload1, '/'));
+        $path = ltrim($this->photo_upload1, '/');
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+        return asset('storage/' . $path);
     }
 
     /**
@@ -113,8 +116,11 @@ class DealerRegistration extends Model
         if (!$this->photo_upload2) {
             return null;
         }
-
-        return asset('storage/' . ltrim($this->photo_upload2, '/'));
+        $path = ltrim($this->photo_upload2, '/');
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+        return asset('storage/' . $path);
     }
 
     /**
@@ -143,7 +149,7 @@ class DealerRegistration extends Model
             return [];
         }
 
-        return array_values(array_filter(array_map('trim', explode(',', $value)), fn($v) => $v !== ''));
+        return array_values(array_filter(array_map('trim', explode(',', $value)), fn ($v) => $v !== ''));
     }
 
     /**

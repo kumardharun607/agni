@@ -30,12 +30,9 @@ class PermissionController extends Controller
     // permission-edit access.
     private function guardSuperAdminRole(Role $role): void
     {
-        $isAdminRole = strcasecmp($role->name, 'Admin') === 0;
-        $currentUserIsAdmin = optional(auth()->user()->role)->name
-            && strcasecmp(auth()->user()->role->name, 'Admin') === 0;
-
-        if ($isAdminRole && ! $currentUserIsAdmin) {
-            abort(403, 'Only the Super Admin role can edit its own permissions.');
+        // Admin always has full access — no role (including Admin itself) may change it.
+        if (strcasecmp($role->name, 'Admin') === 0) {
+            abort(403, 'Admin role permissions cannot be modified. Admin always has full access to all features.');
         }
     }
 
