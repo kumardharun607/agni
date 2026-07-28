@@ -11,13 +11,28 @@ class CountryImport implements ToModel, WithHeadingRow
     public function model(array $row)
     {
         $name = $row['name'] ?? $row['country_name'] ?? null;
-        if (!$name) {
+        if (! $name) {
             return null;
         }
 
-        return Country::updateOrCreate(
-            ['name' => $name],
-            ['code' => $row['code'] ?? null]
-        );
+        $name = trim($name);
+
+        // Skip live duplicates (controller import handles the custom message path)
+        if (Country::where('name', $name)->exists()) {
+            return null;
+        }
+
+        $trashed = Country::onlyTrashed()->where('name', $name)->first();
+        if ($trashed) {
+            $trashed->restore();
+            $trashed->update(['code' => $row['code'] ?? null]);
+
+            return null;
+        }
+
+        return new Country([
+            'name' => $name,
+            'code' => $row['code'] ?? null,
+        ]);
     }
 }

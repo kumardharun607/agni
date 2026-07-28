@@ -97,15 +97,43 @@ class CountryController extends Controller
             return back()->withErrors($e->errors());
         }
         $count = 0;
+        $duplicates = [];
         foreach ($rows as $row) {
             $name = $this->csvValue($row, 'Name') ?: $this->csvValue($row, 'name') ?: $this->csvValue($row, 'country_name');
             if (! $name) {
                 continue;
             }
+            $name = trim($name);
             $code = $this->csvValue($row, 'Code') ?: $this->csvValue($row, 'code');
-            $this->service->updateOrCreate(['name' => $name], ['code' => $code]);
+
+            // Live (non-deleted) country already exists → collect custom error, do not import
+            $existing = \App\Models\Country::where('name', $name)->first();
+            if ($existing) {
+                $duplicates[] = $name;
+                continue;
+            }
+
+            // Soft-deleted country with same name → restore (clear deleted_at) and treat as new
+            $trashed = \App\Models\Country::onlyTrashed()->where('name', $name)->first();
+            if ($trashed) {
+                $trashed->restore();
+                $trashed->update(['code' => $code]);
+                $count++;
+                continue;
+            }
+
+            $this->service->create(['name' => $name, 'code' => $code]);
             $count++;
         }
+
+        if (! empty($duplicates) && $count === 0) {
+            $message = 'These countries already exist and cannot be imported: ' . implode(', ', array_unique($duplicates));
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 422);
+            }
+            return back()->withErrors(['file' => $message]);
+        }
+
         if ($count === 0) {
             $message = 'No valid rows found to import. Check that the Name column has values.';
             if ($request->expectsJson()) {
@@ -113,7 +141,11 @@ class CountryController extends Controller
             }
             return back()->withErrors(['file' => $message]);
         }
+
         $message = "$count countries imported successfully.";
+        if (! empty($duplicates)) {
+            $message .= ' Skipped (already exist): ' . implode(', ', array_unique($duplicates));
+        }
         if ($request->expectsJson()) {
             return response()->json(['success' => true, 'message' => $message]);
         }
