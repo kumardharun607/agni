@@ -3,10 +3,8 @@
 namespace App\Http\Controllers\Pincode;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Pincode\PincodeRequest;
 use App\Models\City;
 use App\Models\Pincode;
-use App\Services\PincodeService;
 use App\Traits\HasCsvIO;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
@@ -14,13 +12,7 @@ use Yajra\DataTables\Facades\DataTables;
 class PincodeController extends Controller
 {
     use HasCsvIO;
-
-    public function __construct(
-        private readonly PincodeService $service
-    ) {
-    }
-
-    public function index()
+public function index()
     {
         return view('masters.pincodes.index');
     }
@@ -45,9 +37,11 @@ class PincodeController extends Controller
         return view('masters.pincodes.create', compact('cities'));
     }
 
-    public function store(PincodeRequest $request)
+    public function store(Request $request)
     {
-        $this->service->create($request->validated());
+        // validation + create handled below
+        $data = $request->validate($this->rules());
+        Pincode::create($data);
 
         if ($request->expectsJson()) {
             return response()->json(['success' => true, 'message' => 'Pincode created successfully.', 'redirect' => route('pincodes.index')]);
@@ -63,9 +57,10 @@ class PincodeController extends Controller
         return view('masters.pincodes.edit', compact('pincode', 'cities'));
     }
 
-    public function update(PincodeRequest $request, Pincode $pincode)
+    public function update(Request $request, Pincode $pincode)
     {
-        $this->service->update($pincode->id, $request->validated());
+        $data = $request->validate($this->rules($pincode->id));
+        $pincode->update($data);
 
         if ($request->expectsJson()) {
             return response()->json(['success' => true, 'message' => 'Pincode updated successfully.', 'redirect' => route('pincodes.index')]);
@@ -76,7 +71,7 @@ class PincodeController extends Controller
 
     public function destroy(Pincode $pincode)
     {
-        $this->service->delete($pincode->id);
+        $pincode->delete();
 
         return response()->json(['success' => true]);
     }
@@ -114,7 +109,7 @@ class PincodeController extends Controller
             if (! $city || ! $pincode) {
                 continue;
             }
-            $this->service->updateOrCreate(['city_id' => $city->id, 'pincode' => $pincode]);
+            Pincode::updateOrCreate(['city_id' => $city->id, 'pincode' => $pincode]);
             $count++;
         }
 
@@ -130,5 +125,14 @@ class PincodeController extends Controller
             return response()->json(['success' => true, 'message' => $message]);
         }
         return redirect()->route('pincodes.index')->with('success', $message);
+    }
+
+
+    private function rules(?int $id = null): array
+    {
+        return [
+            'city_id' => ['required', 'exists:cities,id'],
+            'pincode' => ['required', 'string', 'max:20'],
+        ];
     }
 }

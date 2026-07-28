@@ -6,21 +6,17 @@ use App\Http\Controllers\Controller;
 use App\Models\PermissionDropdown;
 use App\Models\Role;
 use App\Models\RolePermission;
-use App\Services\RoleService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
 class PermissionController extends Controller
 {
-    public function __construct(
-        private readonly RoleService $roleService
-    ) {
-    }
+    
 
     // Roles & Permissions matrix page: pick a role, tick view/add/edit/delete per feature
     public function index()
     {
-        $roles = $this->roleService->getAllOrderedByLevel();
+        $roles = Role::orderBy('level')->get();
 
         return view('permissions.index', compact('roles'));
     }

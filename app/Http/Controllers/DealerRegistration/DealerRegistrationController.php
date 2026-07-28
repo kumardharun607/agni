@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\DealerRegistration;
 use App\Http\Controllers\Controller;
 use App\Exports\DealerRegistrationsExport;
-use App\Http\Requests\DealerRegistrationRequest;
 use App\Imports\DealerRegistrationsImport;
 use App\Models\Brand;
 use App\Models\DealerRegistration;
@@ -162,7 +161,7 @@ class DealerRegistrationController extends Controller
     }
 
 
-    public function store(DealerRegistrationRequest $request): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
         abort_unless(userCan('Dealer Registration', 'add'), 403);
 
@@ -184,7 +183,7 @@ class DealerRegistrationController extends Controller
             ->with('success', 'Dealer registration created successfully.');
     }
 
-    public function update(DealerRegistrationRequest $request, DealerRegistration $dealerRegistration): RedirectResponse
+    public function update(Request $request, DealerRegistration $dealerRegistration): RedirectResponse
     {
         abort_unless(userCan('Dealer Registration', 'edit'), 403);
 
@@ -259,7 +258,7 @@ class DealerRegistrationController extends Controller
      * Normalises the validated Form Request payload: checkbox arrays are
      * imploded into the CSV strings the database columns actually store.
      */
-    private function prepareData(DealerRegistrationRequest $request): array
+    private function prepareData(Request $request): array
     {
         $validated = $request->validated();
 
@@ -371,5 +370,56 @@ class DealerRegistrationController extends Controller
                 'message' => 'Unable to import dealer registrations.',
             ], 500);
         }
+    }
+
+
+    private function registrationRules(Request $request): array
+    {
+        $id = optional($request->route('dealer_registration'))->id;
+        $year = (int) date('Y');
+        return [
+            'n_of_propriter' => ['required', 'string', 'max:150'],
+            'n_of_firm' => ['required', 'string', 'max:150'],
+            'mobile_no' => ['required', 'digits:10'],
+            'email' => ['required', 'email', 'max:150'],
+            'address' => ['required', 'string'],
+            'state_wise' => ['required', 'string', 'max:10'],
+            'shop_est_yr' => ['required', 'integer', 'min:1900', 'max:' . $year],
+            'age_of_bus' => ['nullable', 'string', 'max:50'],
+            'own_rent' => ['nullable', 'string', 'max:20'],
+            'agni_exp_ton' => ['nullable', 'string', 'max:50'],
+            'dealer_total_capacity' => ['nullable', 'string', 'max:50'],
+            'so_approved_name' => ['required', 'string', 'max:100'],
+            'manager_name' => ['nullable', 'string', 'max:100'],
+            'photo_upload1' => [$id ? 'nullable' : 'required', 'image', 'max:4096'],
+            'photo_upload2' => [$id ? 'nullable' : 'required', 'image', 'max:4096'],
+            'type_of_ac' => ['required', 'array'],
+            'status_of_firm' => ['required', 'array'],
+            'other_business' => ['nullable', 'array'],
+            'alter_mobno1' => ['nullable', 'digits:10'],
+            'alter_mobno2' => ['nullable', 'digits:10'],
+            'name_add_bank' => ['nullable', 'string', 'max:150'],
+            'total_turnover_month' => ['nullable', 'string', 'max:30'],
+            'total_turnover_year' => ['nullable', 'string', 'max:30'],
+            'east' => ['nullable', 'string', 'max:150'],
+            'west' => ['nullable', 'string', 'max:150'],
+            'south' => ['nullable', 'string', 'max:150'],
+            'north' => ['nullable', 'string', 'max:150'],
+            'e_dist' => ['nullable', 'numeric', 'min:0'],
+            'w_dist' => ['nullable', 'numeric', 'min:0'],
+            's_dist' => ['nullable', 'numeric', 'min:0'],
+            'n_dist' => ['nullable', 'numeric', 'min:0'],
+            'sub_1' => ['nullable', 'string'],
+            'sub_2' => ['nullable', 'string'],
+            'sub_3' => ['nullable', 'string'],
+            'sub_4' => ['nullable', 'string'],
+            'other1' => ['nullable', 'numeric', 'min:0'],
+            'other2' => ['nullable', 'numeric', 'min:0'],
+            'other3' => ['nullable', 'numeric', 'min:0'],
+            'other4' => ['nullable', 'numeric', 'min:0'],
+            'shop_areasq' => ['nullable', 'string', 'max:20'],
+            'godown_areasq' => ['nullable', 'string', 'max:20'],
+            'alias_id' => ['nullable', 'string', 'max:50'],
+        ];
     }
 }

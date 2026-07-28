@@ -3,21 +3,15 @@
 namespace App\Http\Controllers\Country;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Country\CountryRequest;
 use App\Models\Country;
-use App\Services\CountryService;
 use App\Traits\HasCsvIO;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Yajra\DataTables\Facades\DataTables;
 
 class CountryController extends Controller
 {
     use HasCsvIO;
-
-    public function __construct(
-        private readonly CountryService $service
-    ) {
-    }
 
     public function index()
     {
@@ -38,9 +32,26 @@ class CountryController extends Controller
         return view('masters.countries.create');
     }
 
-    public function store(CountryRequest $request)
+    public function store(Request $request)
     {
-        $this->service->create($request->validated());
+        $data = $request->validate([
+            'name' => [
+                'required', 'string', 'max:255',
+                Rule::unique('countries', 'name')->whereNull('deleted_at'),
+            ],
+            'code' => ['nullable', 'string', 'max:10'],
+        ], [
+            'name.unique' => 'This country already exists.',
+            'name.required' => 'Country name is required.',
+        ]);
+
+        $trashed = Country::onlyTrashed()->where('name', $data['name'])->first();
+        if ($trashed) {
+            $trashed->restore();
+            $trashed->update($data);
+        } else {
+            Country::create($data);
+        }
 
         if ($request->expectsJson()) {
             return response()->json(['success' => true, 'message' => 'Country created successfully.', 'redirect' => route('countries.index')]);
@@ -54,9 +65,19 @@ class CountryController extends Controller
         return view('masters.countries.edit', compact('country'));
     }
 
-    public function update(CountryRequest $request, Country $country)
+    public function update(Request $request, Country $country)
     {
-        $this->service->update($country->id, $request->validated());
+        $data = $request->validate([
+            'name' => [
+                'required', 'string', 'max:255',
+                Rule::unique('countries', 'name')->whereNull('deleted_at')->ignore($country->id),
+            ],
+            'code' => ['nullable', 'string', 'max:10'],
+        ], [
+            'name.unique' => 'This country already exists.',
+        ]);
+
+        $country->update($data);
 
         if ($request->expectsJson()) {
             return response()->json(['success' => true, 'message' => 'Country updated successfully.', 'redirect' => route('countries.index')]);
@@ -67,7 +88,7 @@ class CountryController extends Controller
 
     public function destroy(Country $country)
     {
-        $this->service->delete($country->id);
+        $country->delete();
 
         return response()->json(['success' => true]);
     }
@@ -96,6 +117,7 @@ class CountryController extends Controller
             }
             return back()->withErrors($e->errors());
         }
+
         $count = 0;
         $duplicates = [];
         foreach ($rows as $row) {
@@ -106,15 +128,13 @@ class CountryController extends Controller
             $name = trim($name);
             $code = $this->csvValue($row, 'Code') ?: $this->csvValue($row, 'code');
 
-            // Live (non-deleted) country already exists → collect custom error, do not import
-            $existing = \App\Models\Country::where('name', $name)->first();
+            $existing = Country::where('name', $name)->first();
             if ($existing) {
                 $duplicates[] = $name;
                 continue;
             }
 
-            // Soft-deleted country with same name → restore (clear deleted_at) and treat as new
-            $trashed = \App\Models\Country::onlyTrashed()->where('name', $name)->first();
+            $trashed = Country::onlyTrashed()->where('name', $name)->first();
             if ($trashed) {
                 $trashed->restore();
                 $trashed->update(['code' => $code]);
@@ -122,7 +142,7 @@ class CountryController extends Controller
                 continue;
             }
 
-            $this->service->create(['name' => $name, 'code' => $code]);
+            Country::create(['name' => $name, 'code' => $code]);
             $count++;
         }
 

@@ -3,9 +3,7 @@
 namespace App\Http\Controllers\Role;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Role\RoleRequest;
 use App\Models\Role;
-use App\Services\RoleService;
 use App\Traits\HasCsvIO;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
@@ -14,10 +12,7 @@ class RoleController extends Controller
 {
     use HasCsvIO;
 
-    public function __construct(
-        private readonly RoleService $service
-    ) {
-    }
+    
 
     public function index()
     {
@@ -38,9 +33,10 @@ class RoleController extends Controller
         return view('roles.create');
     }
 
-    public function store(RoleRequest $request)
+    public function store(Request $request)
     {
-        $this->service->create($request->validated());
+        $data = $request->validate($this->rules());
+        Role::create($data);
 
         if ($request->expectsJson()) {
             return response()->json(['success' => true, 'message' => 'Role created successfully.', 'redirect' => route('roles.index')]);
@@ -54,9 +50,10 @@ class RoleController extends Controller
         return view('roles.edit', compact('role'));
     }
 
-    public function update(RoleRequest $request, Role $role)
+    public function update(Request $request, Role $role)
     {
-        $this->service->update($role->id, $request->validated());
+        $data = $request->validate($this->rules($role->id));
+        $role->update($data);
 
         if ($request->expectsJson()) {
             return response()->json(['success' => true, 'message' => 'Role updated successfully.', 'redirect' => route('roles.index')]);
@@ -67,7 +64,7 @@ class RoleController extends Controller
 
     public function destroy(Role $role)
     {
-        $this->service->delete($role->id);
+        $role->delete();
 
         return response()->json(['success' => true]);
     }
@@ -96,7 +93,7 @@ class RoleController extends Controller
             if (! $name) {
                 continue;
             }
-            $this->service->updateOrCreate(['name' => $name], ['level' => $this->csvValue($row, 'Level')]);
+            Role::updateOrCreate(['name' => $name], ['level' => $this->csvValue($row, 'Level')]);
             $count++;
         }
 
@@ -105,5 +102,11 @@ class RoleController extends Controller
             return response()->json(['success' => true, 'message' => $message]);
         }
         return redirect()->route('roles.index')->with('success', $message);
+    }
+
+
+    private function rules(?int $id = null): array
+    {
+        return ['name' => ['required', 'string', 'max:255'], 'level' => ['nullable', 'integer']];
     }
 }

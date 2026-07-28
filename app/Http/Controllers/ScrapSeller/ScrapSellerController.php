@@ -3,8 +3,7 @@
 namespace App\Http\Controllers\ScrapSeller;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\ScrapSeller\StoreScrapSellerRequest;
-use App\Http\Requests\ScrapSeller\UpdateScrapSellerRequest;
+use Illuminate\Http\Request;
 use App\Models\ScrapSeller;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -37,11 +36,12 @@ class ScrapSellerController extends Controller
         return view('scrap-sellers.create');
     }
 
-    public function store(StoreScrapSellerRequest $request)
+    public function store(Request $request)
     {
         DB::beginTransaction();
 
         try {
+            $request->validate($this->sellerRules($request));
             $data = $request->safe()->except(array_keys($this->imageFields));
 
             foreach ($this->imageFields as $field => $folder) {
@@ -77,11 +77,12 @@ class ScrapSellerController extends Controller
         return view('scrap-sellers.edit', compact('scrapSeller'));
     }
 
-    public function update(UpdateScrapSellerRequest $request, ScrapSeller $scrapSeller)
+    public function update(Request $request, ScrapSeller $scrapSeller)
     {
         DB::beginTransaction();
 
         try {
+            $request->validate($this->sellerRules($request));
             $data = $request->safe()->except(array_keys($this->imageFields));
 
             foreach ($this->imageFields as $field => $folder) {
@@ -162,5 +163,56 @@ class ScrapSellerController extends Controller
         if (File::exists($full) && File::isFile($full)) {
             File::delete($full);
         }
+    }
+
+
+    private function sellerRules($request): array
+    {
+        $id = optional($request->route('scrap_seller'))->id;
+        return [
+            'alies_id' => ['nullable', 'string', 'max:50'],
+            'company_name' => ['required', 'string', 'max:255'],
+            'business_age' => ['nullable', 'string', 'max:50'],
+            'owner_name' => ['required', 'string', 'max:255'],
+            'mobile' => ['required', 'string', 'regex:/^[0-9]{10,15}$/', 'unique:scrap_sellers,mobile,' . ($id ?? 'NULL')],
+            'owner_type' => ['nullable', 'string', 'max:100'],
+            'address' => ['required', 'string'],
+            'gst_no' => ['nullable', 'string', 'max:30'],
+            'pan_no' => ['nullable', 'string', 'max:20'],
+            'email' => ['nullable', 'email', 'max:255', 'unique:scrap_sellers,email,' . ($id ?? 'NULL')],
+            'owner_rent' => ['nullable', 'string', 'max:100'],
+            'godownspace' => ['nullable', 'string', 'max:100'],
+            'company_seller1' => ['nullable', 'string', 'max:255'],
+            'company_seller2' => ['nullable', 'string', 'max:255'],
+            'company_seller3' => ['nullable', 'string', 'max:255'],
+            'company_seller4' => ['nullable', 'string', 'max:255'],
+            'company_seller5' => ['nullable', 'string', 'max:255'],
+            'tonmonth1' => ['nullable', 'string', 'max:50'],
+            'tonmonth2' => ['nullable', 'string', 'max:50'],
+            'tonmonth3' => ['nullable', 'string', 'max:50'],
+            'tonmonth4' => ['nullable', 'string', 'max:50'],
+            'tonmonth5' => ['nullable', 'string', 'max:50'],
+            'total_ton' => ['nullable', 'string', 'max:50'],
+            'other_business' => ['nullable', 'string', 'max:255'],
+            'agni_business_value' => ['nullable', 'string', 'max:255'],
+            'question1' => ['nullable', 'string'],
+            'question2' => ['nullable', 'string'],
+            'question3' => ['nullable', 'string'],
+            'question4' => ['nullable', 'string'],
+            'question5' => ['nullable', 'string'],
+            'question6' => ['nullable', 'string'],
+            'question7' => ['nullable', 'string'],
+            'question8' => ['nullable', 'string'],
+            'shop_image' => ['nullable', 'image', 'max:4096'],
+            'godown_image' => ['nullable', 'image', 'max:4096'],
+            'pancard_image' => ['nullable', 'image', 'max:4096'],
+            'aadhar_front_image' => ['nullable', 'image', 'max:4096'],
+            'aadhar_back_image' => ['nullable', 'image', 'max:4096'],
+            'reg_certificate_image' => ['nullable', 'image', 'max:4096'],
+            'action' => ['nullable', 'string', 'max:50'],
+            'cdate' => ['nullable', 'date'],
+            'rep_id' => ['nullable', 'string', 'max:50'],
+            'approval' => ['nullable', 'string', 'max:50'],
+        ];
     }
 }

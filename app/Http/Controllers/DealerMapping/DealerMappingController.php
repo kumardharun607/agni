@@ -3,15 +3,10 @@
 namespace App\Http\Controllers\DealerMapping;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\DealerMapping\DealerMappingRequest;
-use App\Http\Requests\DealerMapping\MapUserRequest;
 use App\Models\Dealer;
 use App\Models\DealerMapping;
 use App\Models\Role;
 use App\Models\User;
-use App\Services\DealerMappingService;
-use App\Services\RoleService;
-use App\Services\UserService;
 use App\Traits\HasCsvIO;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
@@ -20,12 +15,7 @@ class DealerMappingController extends Controller
 {
     use HasCsvIO;
 
-    public function __construct(
-        private readonly DealerMappingService $service,
-        private readonly RoleService $roleService,
-        private readonly UserService $userService,
-    ) {
-    }
+    
 
     public function index()
     {
@@ -46,14 +36,15 @@ class DealerMappingController extends Controller
     public function create()
     {
         $dealers = Dealer::orderBy('name')->get();
-        $bdes = $this->userService->getByRoleName('BDE');
+        $bdes = User::whereHas('role', function ($q) { $q->where('name', 'BDE'); })->orderBy('name')->get();
 
         return view('dealer_mapping.create', compact('dealers', 'bdes'));
     }
 
-    public function store(DealerMappingRequest $request)
+    public function store(Request $request)
     {
-        $this->service->create($request->validated());
+        $data = $request->validate($this->mappingRules());
+        DealerMapping::create($data);
 
         if ($request->expectsJson()) {
             return response()->json(['success' => true, 'message' => 'Dealer mapped to BDE successfully.', 'redirect' => route('dealer-mapping.index')]);
@@ -65,7 +56,7 @@ class DealerMappingController extends Controller
     public function edit(DealerMapping $dealer_mapping)
     {
         $dealers = Dealer::orderBy('name')->get();
-        $bdes = $this->userService->getByRoleName('BDE');
+        $bdes = User::whereHas('role', function ($q) { $q->where('name', 'BDE'); })->orderBy('name')->get();
 
         return view('dealer_mapping.edit', ['item' => $dealer_mapping, 'dealers' => $dealers, 'bdes' => $bdes]);
     }
@@ -74,7 +65,7 @@ class DealerMappingController extends Controller
     public function show(DealerMapping $dealer_mapping)
     {
         $dealers = Dealer::orderBy('name')->get();
-        $bdes = $this->userService->getByRoleName('BDE');
+        $bdes = User::whereHas('role', function ($q) { $q->where('name', 'BDE'); })->orderBy('name')->get();
 
         return view('dealer_mapping.edit', [
             'item' => $dealer_mapping,
@@ -84,9 +75,10 @@ class DealerMappingController extends Controller
         ]);
     }
 
-    public function update(DealerMappingRequest $request, DealerMapping $dealer_mapping)
+    public function update(Request $request, DealerMapping $dealer_mapping)
     {
-        $this->service->update($dealer_mapping->id, $request->validated());
+        $data = $request->validate($this->mappingRules());
+        $dealer_mapping->update($data);
 
         if ($request->expectsJson()) {
             return response()->json(['success' => true, 'message' => 'Mapping updated successfully.', 'redirect' => route('dealer-mapping.index')]);
@@ -97,7 +89,7 @@ class DealerMappingController extends Controller
 
     public function destroy(DealerMapping $dealer_mapping)
     {
-        $this->service->delete($dealer_mapping->id);
+        $dealer_mapping->delete();
 
         return response()->json(['success' => true]);
     }
@@ -189,7 +181,7 @@ class DealerMappingController extends Controller
             }
 
             try {
-                $this->service->create([
+                DealerMapping::create([
                     'dealer_id' => $dealer->id,
                     'bde_id' => $bde->id,
                 ]);
@@ -258,7 +250,7 @@ class DealerMappingController extends Controller
     // it's now only reachable from the sidebar (Masters -> View Hierarchy).
     public function hierarchy()
     {
-        $tree = $this->service->buildHierarchyTree();
+        $tree = $this->buildHierarchyTree();
 
         return view('dealer_mapping.hierarchy', compact('tree'));
     }
@@ -266,26 +258,95 @@ class DealerMappingController extends Controller
     // form to link a child user under a parent user in the hierarchy
     public function mapUserForm()
     {
-        $roles = $this->roleService->getAllOrderedByLevel();
+        $roles = Role::orderBy('level')->get();
         $users = User::with('role')->orderBy('name')->get();
 
         return view('dealer_mapping.map_user', compact('roles', 'users'));
     }
 
-    public function mapUserStore(MapUserRequest $request)
+    public function mapUserStore(Request $request)
     {
-        $data = $request->validated();
+        $data = $request->validate(['parent_id' => 'required|exists:users,id', 'child_id' => 'required|exists:users,id|different:parent_id']);
 
         // Change 4: parent must be a higher hierarchy level than the child
         // (Telecaller -> Manager -> SO -> BDE order only). Reject anything else.
-        $error = $this->service->validateHierarchyOrder((int) $data['parent_id'], (int) $data['child_id']);
+        $error = $this->validateHierarchyOrder((int) $data['parent_id'], (int) $data['child_id']);
 
         if ($error) {
             return back()->withInput()->withErrors(['child_id' => $error]);
         }
 
-        $this->service->createUserMapping((int) $data['parent_id'], (int) $data['child_id']);
+        $this->createUserMapping((int) $data['parent_id'], (int) $data['child_id']);
 
         return redirect()->route('dealer-mapping.hierarchy')->with('success', 'User linked in hierarchy successfully.');
+    }
+
+
+    private function mappingRules(): array
+    {
+        return [
+            'dealer_id' => ['required', 'exists:dealers,id'],
+            'bde_id' => ['required', 'exists:users,id'],
+        ];
+    }
+
+    private function buildHierarchyTree(): array
+    {
+        $roles = Role::orderBy('level')->get()->keyBy('name');
+        $tree = [];
+        if (isset($roles['BDE'])) {
+            $bdes = User::where('role_id', $roles['BDE']->id)->orderBy('name')->get();
+            foreach ($bdes as $bde) {
+                $tree[] = [
+                    'user' => $bde,
+                    'children' => $this->buildLevel($bde, 'SO'),
+                ];
+            }
+        }
+        return $tree;
+    }
+
+    private function buildLevel(User $parent, string $nextRoleName): array
+    {
+        $nextRole = Role::where('name', $nextRoleName)->first();
+        if (! $nextRole) {
+            return [];
+        }
+        $children = $parent->children()->where('role_id', $nextRole->id)->orderBy('name')->get();
+        $roleAfter = match ($nextRoleName) {
+            'SO' => 'Manager',
+            'Manager' => 'Telecaller',
+            default => null,
+        };
+        return $children->map(function ($child) use ($roleAfter) {
+            return [
+                'user' => $child,
+                'children' => $roleAfter ? $this->buildLevel($child, $roleAfter) : [],
+            ];
+        })->toArray();
+    }
+
+    private function validateHierarchyOrder(int $parentId, int $childId): ?string
+    {
+        $parent = User::with('role')->find($parentId);
+        $child = User::with('role')->find($childId);
+        if (! $parent || ! $parent->role || $parent->role->level === null) {
+            return 'Selected parent does not have a valid hierarchy level assigned.';
+        }
+        if (! $child || ! $child->role || $child->role->level === null) {
+            return 'Selected child does not have a valid hierarchy level assigned.';
+        }
+        if ((int) $parent->role->level >= (int) $child->role->level) {
+            return 'Invalid mapping: parent must be a higher level than the child. Only the order Telecaller → Manager → SO → BDE is allowed as parent → child.';
+        }
+        return null;
+    }
+
+    private function createUserMapping(int $parentId, int $childId)
+    {
+        return \App\Models\UserMapping::firstOrCreate([
+            'parent_id' => $parentId,
+            'child_id' => $childId,
+        ]);
     }
 }

@@ -3,8 +3,7 @@
 namespace App\Http\Controllers\ScrapDistributor;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\ScrapDistributor\StoreScrapDistributorRequest;
-use App\Http\Requests\ScrapDistributor\UpdateScrapDistributorRequest;
+use Illuminate\Http\Request;
 use App\Models\ScrapDistributor;
 use App\Models\Country;
 use App\Models\State;
@@ -46,13 +45,13 @@ class ScrapDistributorController extends Controller
         ));
     }
 
-    public function store(StoreScrapDistributorRequest $request)
+    public function store(Request $request)
     {
         DB::beginTransaction();
 
         try {
 
-            $data = $request->validated();
+            $data = $request->validate($this->distributorRules());
 
             if ($request->hasFile('image')) {
 
@@ -109,13 +108,13 @@ class ScrapDistributorController extends Controller
         ));
     }
 
-    public function update(UpdateScrapDistributorRequest $request, ScrapDistributor $scrapDistributor)
+    public function update(Request $request, ScrapDistributor $scrapDistributor)
     {
         DB::beginTransaction();
 
         try {
 
-            $data = $request->validated();
+            $data = $request->validate($this->distributorRules());
 
             if ($request->hasFile('image')) {
 
@@ -160,5 +159,23 @@ class ScrapDistributorController extends Controller
             ], 422);
 
         }
+    }
+
+
+    private function distributorRules(): array
+    {
+        return [
+            'company_name' => ['required', 'string', 'max:255'],
+            'owner_name' => ['nullable', 'string', 'max:255'],
+            'mobile' => ['nullable', 'string', 'max:20'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'address' => ['nullable', 'string'],
+            'country_id' => ['nullable', 'exists:countries,id'],
+            'state_id' => ['nullable', 'exists:states,id'],
+            'city_id' => ['nullable', 'exists:cities,id'],
+            'pincode_id' => ['nullable', 'exists:pincodes,id'],
+            'latitude' => ['nullable', 'numeric'],
+            'longitude' => ['nullable', 'numeric'],
+        ];
     }
 }

@@ -3,10 +3,8 @@
 namespace App\Http\Controllers\State;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\State\StateRequest;
 use App\Models\Country;
 use App\Models\State;
-use App\Services\StateService;
 use App\Traits\HasCsvIO;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
@@ -14,13 +12,7 @@ use Yajra\DataTables\Facades\DataTables;
 class StateController extends Controller
 {
     use HasCsvIO;
-
-    public function __construct(
-        private readonly StateService $service
-    ) {
-    }
-
-    public function index()
+public function index()
     {
         return view('masters.states.index');
     }
@@ -42,9 +34,11 @@ class StateController extends Controller
         return view('masters.states.create', compact('countries'));
     }
 
-    public function store(StateRequest $request)
+    public function store(Request $request)
     {
-        $this->service->create($request->validated());
+        // validation + create handled below
+        $data = $request->validate($this->rules());
+        State::create($data);
 
         if ($request->expectsJson()) {
             return response()->json(['success' => true, 'message' => 'State created successfully.', 'redirect' => route('states.index')]);
@@ -60,9 +54,10 @@ class StateController extends Controller
         return view('masters.states.edit', compact('state', 'countries'));
     }
 
-    public function update(StateRequest $request, State $state)
+    public function update(Request $request, State $state)
     {
-        $this->service->update($state->id, $request->validated());
+        $data = $request->validate($this->rules($state->id));
+        $state->update($data);
 
         if ($request->expectsJson()) {
             return response()->json(['success' => true, 'message' => 'State updated successfully.', 'redirect' => route('states.index')]);
@@ -73,7 +68,7 @@ class StateController extends Controller
 
     public function destroy(State $state)
     {
-        $this->service->delete($state->id);
+        $state->delete();
 
         return response()->json(['success' => true]);
     }
@@ -111,7 +106,7 @@ class StateController extends Controller
                 continue;
             }
             $country = Country::firstOrCreate(['name' => $countryName]);
-            $this->service->updateOrCreate(['name' => $name, 'country_id' => $country->id]);
+            State::updateOrCreate(['name' => $name, 'country_id' => $country->id]);
             $count++;
         }
 
@@ -127,5 +122,14 @@ class StateController extends Controller
             return response()->json(['success' => true, 'message' => $message]);
         }
         return redirect()->route('states.index')->with('success', $message);
+    }
+
+
+    private function rules(?int $id = null): array
+    {
+        return [
+            'country_id' => ['required', 'exists:countries,id'],
+            'name' => ['required', 'string', 'max:255'],
+        ];
     }
 }

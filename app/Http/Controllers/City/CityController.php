@@ -3,10 +3,8 @@
 namespace App\Http\Controllers\City;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\City\CityRequest;
 use App\Models\City;
 use App\Models\State;
-use App\Services\CityService;
 use App\Traits\HasCsvIO;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
@@ -14,13 +12,7 @@ use Yajra\DataTables\Facades\DataTables;
 class CityController extends Controller
 {
     use HasCsvIO;
-
-    public function __construct(
-        private readonly CityService $service
-    ) {
-    }
-
-    public function index()
+public function index()
     {
         return view('masters.cities.index');
     }
@@ -42,9 +34,11 @@ class CityController extends Controller
         return view('masters.cities.create', compact('states'));
     }
 
-    public function store(CityRequest $request)
+    public function store(Request $request)
     {
-        $this->service->create($request->validated());
+        // validation + create handled below
+        $data = $request->validate($this->rules());
+        City::create($data);
 
         if ($request->expectsJson()) {
             return response()->json(['success' => true, 'message' => 'City created successfully.', 'redirect' => route('cities.index')]);
@@ -60,9 +54,10 @@ class CityController extends Controller
         return view('masters.cities.edit', compact('city', 'states'));
     }
 
-    public function update(CityRequest $request, City $city)
+    public function update(Request $request, City $city)
     {
-        $this->service->update($city->id, $request->validated());
+        $data = $request->validate($this->rules($city->id));
+        $city->update($data);
 
         if ($request->expectsJson()) {
             return response()->json(['success' => true, 'message' => 'City updated successfully.', 'redirect' => route('cities.index')]);
@@ -73,7 +68,7 @@ class CityController extends Controller
 
     public function destroy(City $city)
     {
-        $this->service->delete($city->id);
+        $city->delete();
 
         return response()->json(['success' => true]);
     }
@@ -111,7 +106,7 @@ class CityController extends Controller
             if (! $name || ! $state) {
                 continue;
             }
-            $this->service->updateOrCreate(['name' => $name, 'state_id' => $state->id]);
+            City::updateOrCreate(['name' => $name, 'state_id' => $state->id]);
             $count++;
         }
 
@@ -127,5 +122,14 @@ class CityController extends Controller
             return response()->json(['success' => true, 'message' => $message]);
         }
         return redirect()->route('cities.index')->with('success', $message);
+    }
+
+
+    private function rules(?int $id = null): array
+    {
+        return [
+            'state_id' => ['required', 'exists:states,id'],
+            'name' => ['required', 'string', 'max:255'],
+        ];
     }
 }

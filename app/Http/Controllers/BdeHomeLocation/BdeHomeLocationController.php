@@ -3,8 +3,7 @@
 namespace App\Http\Controllers\BdeHomeLocation;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\BdeHomeLocation\StoreBdeHomeLocationRequest;
-use App\Http\Requests\BdeHomeLocation\UpdateBdeHomeLocationRequest;
+use Illuminate\Http\Request;
 use App\Models\BdeHomeLocation;
 use Illuminate\Support\Facades\DB;
 
@@ -26,7 +25,7 @@ class BdeHomeLocationController extends Controller
         return view('bde-home-locations.create');
     }
 
-    public function store(StoreBdeHomeLocationRequest $request)
+    public function store(Request $request)
     {
         DB::beginTransaction();
 
@@ -71,7 +70,7 @@ class BdeHomeLocationController extends Controller
     }
 
     public function update(
-        UpdateBdeHomeLocationRequest $request,
+        Request $request,
         BdeHomeLocation $bdeHomeLocation
     )
     {
@@ -128,5 +127,16 @@ class BdeHomeLocationController extends Controller
             ], 422);
 
         }
+    }
+
+
+    private function rules(?int $id = null): array
+    {
+        return [
+            'bde_id' => ['required', 'string', 'max:100'],
+            'home_lat' => ['required', 'numeric', 'between:-90,90'],
+            'home_long' => ['required', 'numeric', 'between:-180,180'],
+            'home_address' => ['required', 'string'],
+        ];
     }
 }

@@ -3,8 +3,7 @@
 namespace App\Http\Controllers\SoHomeLocation;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\SoHomeLocation\StoreSoHomeLocationRequest;
-use App\Http\Requests\SoHomeLocation\UpdateSoHomeLocationRequest;
+use Illuminate\Http\Request;
 use App\Models\SoHomeLocation;
 use Illuminate\Support\Facades\DB;
 
@@ -26,7 +25,7 @@ class SoHomeLocationController extends Controller
         return view('so-home-locations.create');
     }
 
-    public function store(StoreSoHomeLocationRequest $request)
+    public function store(Request $request)
     {
         DB::beginTransaction();
 
@@ -75,7 +74,7 @@ class SoHomeLocationController extends Controller
     }
 
     public function update(
-        UpdateSoHomeLocationRequest $request,
+        Request $request,
         SoHomeLocation $soHomeLocation
     ) {
 
@@ -128,5 +127,16 @@ class SoHomeLocationController extends Controller
             ], 422);
 
         }
+    }
+
+
+    private function rules(?int $id = null): array
+    {
+        return [
+            'so_id' => ['required', 'string', 'max:100'],
+            'home_lat' => ['required', 'numeric', 'between:-90,90'],
+            'home_long' => ['required', 'numeric', 'between:-180,180'],
+            'home_address' => ['required', 'string'],
+        ];
     }
 }

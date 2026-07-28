@@ -3,9 +3,7 @@
 namespace App\Http\Controllers\PermissionDropdown;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\PermissionDropdown\PermissionDropdownRequest;
 use App\Models\PermissionDropdown;
-use App\Services\PermissionDropdownService;
 use App\Traits\HasCsvIO;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
@@ -14,10 +12,7 @@ class PermissionDropdownController extends Controller
 {
     use HasCsvIO;
 
-    public function __construct(
-        private readonly PermissionDropdownService $service
-    ) {
-    }
+    
 
     public function index()
     {
@@ -38,9 +33,10 @@ class PermissionDropdownController extends Controller
         return view('permission_dropdown.create');
     }
 
-    public function store(PermissionDropdownRequest $request)
+    public function store(Request $request)
     {
-        $this->service->create($request->validated());
+        $data = $request->validate($this->rules());
+        PermissionDropdown::create($data);
 
         if ($request->expectsJson()) {
             return response()->json(['success' => true, 'message' => 'Feature added successfully.', 'redirect' => route('permission-dropdown.index')]);
@@ -60,9 +56,10 @@ class PermissionDropdownController extends Controller
         return view('permission_dropdown.edit', ['item' => $permission_dropdown, 'readonly' => true]);
     }
 
-    public function update(PermissionDropdownRequest $request, PermissionDropdown $permission_dropdown)
+    public function update(Request $request, PermissionDropdown $permission_dropdown)
     {
-        $this->service->update($permission_dropdown->id, $request->validated());
+        $data = $request->validate($this->rules($permission_dropdown->id));
+        $permission_dropdown->update($data);
 
         if ($request->expectsJson()) {
             return response()->json(['success' => true, 'message' => 'Feature updated successfully.', 'redirect' => route('permission-dropdown.index')]);
@@ -73,7 +70,7 @@ class PermissionDropdownController extends Controller
 
     public function destroy(PermissionDropdown $permission_dropdown)
     {
-        $this->service->delete($permission_dropdown->id);
+        $permission_dropdown->delete();
 
         return response()->json(['success' => true]);
     }
@@ -102,7 +99,7 @@ class PermissionDropdownController extends Controller
             if (! $name) {
                 continue;
             }
-            $this->service->firstOrCreate(['name' => $name]);
+            PermissionDropdown::firstOrCreate(['name' => $name]);
             $count++;
         }
 
@@ -111,5 +108,11 @@ class PermissionDropdownController extends Controller
             return response()->json(['success' => true, 'message' => $message]);
         }
         return redirect()->route('permission-dropdown.index')->with('success', $message);
+    }
+
+
+    private function rules(?int $id = null): array
+    {
+        return ['name' => ['required', 'string', 'max:255']];
     }
 }

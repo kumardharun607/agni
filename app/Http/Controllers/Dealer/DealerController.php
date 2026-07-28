@@ -3,16 +3,11 @@
 namespace App\Http\Controllers\Dealer;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Dealer\DealerRequest;
 use App\Models\City;
 use App\Models\Country;
 use App\Models\Dealer;
 use App\Models\Pincode;
 use App\Models\State;
-use App\Services\CityService;
-use App\Services\DealerService;
-use App\Services\PincodeService;
-use App\Services\StateService;
 use App\Traits\HasCsvIO;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
@@ -21,13 +16,7 @@ class DealerController extends Controller
 {
     use HasCsvIO;
 
-    public function __construct(
-        private readonly DealerService $service,
-        private readonly StateService $stateService,
-        private readonly CityService $cityService,
-        private readonly PincodeService $pincodeService,
-    ) {
-    }
+    
 
     public function index()
     {
@@ -57,7 +46,7 @@ class DealerController extends Controller
         return view('dealers.create', compact('countries', 'parentDealers'));
     }
 
-    public function store(DealerRequest $request)
+    public function store(Request $request)
     {
         $data = $request->validated();
 
@@ -73,7 +62,7 @@ class DealerController extends Controller
 
         $data['alias_id'] = Dealer::generateAliasId((int) $data['client_type']);
 
-        $this->service->create($data);
+        Dealer::create($data);
 
         if ($request->expectsJson()) {
             return response()->json(['success' => true, 'message' => 'Dealer created successfully.', 'redirect' => route('dealers.index')]);
@@ -104,7 +93,7 @@ class DealerController extends Controller
         ]);
     }
 
-    public function update(DealerRequest $request, Dealer $dealer)
+    public function update(Request $request, Dealer $dealer)
     {
         $data = $request->validated();
 
@@ -128,7 +117,7 @@ class DealerController extends Controller
 
     public function destroy(Dealer $dealer)
     {
-        $this->service->delete($dealer->id);
+        $dealer->delete();
 
         return response()->json(['success' => true]);
     }
@@ -169,7 +158,7 @@ class DealerController extends Controller
             $city = ($n = $this->csvValue($row, 'City')) ? City::where('name', $n)->first() : null;
             $pincode = ($n = $this->csvValue($row, 'Pincode')) ? Pincode::where('pincode', $n)->first() : null;
 
-            $this->service->updateOrCreate(
+            Dealer::updateOrCreate(
                 ['mobile' => $mobile],
                 [
                     'name' => $name,
@@ -210,5 +199,32 @@ class DealerController extends Controller
     public function pincodesByCity(City $city)
     {
         return response()->json($this->pincodeService->getByCity($city->id));
+    }
+
+
+    private function rules(?int $id = null): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'client_type' => ['required', 'in:1,2,3'],
+            'parent_dealer_id' => ['nullable', 'required_if:client_type,3', 'exists:dealers,id'],
+            'designation' => ['nullable', 'string', 'max:255'],
+            'contact_person' => ['nullable', 'string', 'max:255'],
+            'mobile' => ['required', 'string', 'max:15'],
+            'alternate_mobile' => ['nullable', 'string', 'max:15'],
+            'whatsapp_number' => ['nullable', 'string', 'max:15'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'gst_no' => ['nullable', 'string', 'max:20'],
+            'pan_no' => ['nullable', 'string', 'max:20'],
+            'credit_limit' => ['nullable', 'numeric'],
+            'payment_terms' => ['nullable', 'string', 'max:255'],
+            'country_id' => ['nullable', 'exists:countries,id'],
+            'state_id' => ['nullable', 'exists:states,id'],
+            'city_id' => ['nullable', 'exists:cities,id'],
+            'pincode_id' => ['nullable', 'exists:pincodes,id'],
+            'address' => ['nullable', 'string'],
+            'latitude' => ['nullable', 'numeric'],
+            'longitude' => ['nullable', 'numeric'],
+        ];
     }
 }

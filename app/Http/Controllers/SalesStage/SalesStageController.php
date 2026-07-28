@@ -3,9 +3,7 @@
 namespace App\Http\Controllers\SalesStage;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\SalesStage\SalesStageRequest;
 use App\Models\SalesStage;
-use App\Services\SalesStageService;
 use App\Traits\HasCsvIO;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
@@ -13,13 +11,7 @@ use Yajra\DataTables\Facades\DataTables;
 class SalesStageController extends Controller
 {
     use HasCsvIO;
-
-    public function __construct(
-        private readonly SalesStageService $service
-    ) {
-    }
-
-    public function index()
+public function index()
     {
         return view('sales_stage.index');
     }
@@ -38,9 +30,11 @@ class SalesStageController extends Controller
         return view('sales_stage.create');
     }
 
-    public function store(SalesStageRequest $request)
+    public function store(Request $request)
     {
-        $this->service->create($request->validated());
+        // validation + create handled below
+        $data = $request->validate($this->rules());
+        SalesStage::create($data);
 
         if ($request->expectsJson()) {
             return response()->json(['success' => true, 'message' => 'Sales stage created successfully.', 'redirect' => route('sales-stage.index')]);
@@ -60,9 +54,10 @@ class SalesStageController extends Controller
         return view('sales_stage.edit', ['item' => $sales_stage, 'readonly' => true]);
     }
 
-    public function update(SalesStageRequest $request, SalesStage $sales_stage)
+    public function update(Request $request, SalesStage $sales_stage)
     {
-        $this->service->update($sales_stage->id, $request->validated());
+        $data = $request->validate($this->rules($sales_stage->id));
+        $sales_stage->update($data);
 
         if ($request->expectsJson()) {
             return response()->json(['success' => true, 'message' => 'Sales stage updated successfully.', 'redirect' => route('sales-stage.index')]);
@@ -73,7 +68,7 @@ class SalesStageController extends Controller
 
     public function destroy(SalesStage $sales_stage)
     {
-        $this->service->delete($sales_stage->id);
+        $sales_stage->delete();
 
         return response()->json(['success' => true]);
     }
@@ -124,5 +119,13 @@ class SalesStageController extends Controller
         }
 
         return redirect()->route('sales-stage.index')->with('success', $message);
+    }
+
+
+    private function rules(?int $id = null): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+        ];
     }
 }

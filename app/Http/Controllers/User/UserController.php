@@ -3,12 +3,9 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\User\UserRequest;
 use App\Models\Country;
 use App\Models\Role;
 use App\Models\User;
-use App\Services\RoleService;
-use App\Services\UserService;
 use App\Traits\HasCsvIO;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -18,11 +15,7 @@ class UserController extends Controller
 {
     use HasCsvIO;
 
-    public function __construct(
-        private readonly UserService $service,
-        private readonly RoleService $roleService,
-    ) {
-    }
+    
 
     public function index()
     {
@@ -41,13 +34,13 @@ class UserController extends Controller
 
     public function create()
     {
-        $roles = $this->roleService->getAllOrderedByLevel();
+        $roles = Role::orderBy('level')->get();
         $countries = Country::orderBy('name')->get();
 
         return view('users.create', compact('roles', 'countries'));
     }
 
-    public function store(UserRequest $request)
+    public function store(Request $request)
     {
         $data = $request->validated();
 
@@ -55,7 +48,7 @@ class UserController extends Controller
         // the User model mutator hashes it into `password` automatically.
         $data['plain_password'] = $request->input('plain_password') ?: Str::random(10);
 
-        $this->service->create($data);
+        User::create($data);
 
         if ($request->expectsJson()) {
             return response()->json(['success' => true, 'message' => 'User created successfully.', 'redirect' => route('users.index')]);
@@ -66,7 +59,7 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
-        $roles = $this->roleService->getAllOrderedByLevel();
+        $roles = Role::orderBy('level')->get();
         $countries = Country::orderBy('name')->get();
 
         return view('users.edit', compact('user', 'roles', 'countries'));
@@ -75,7 +68,7 @@ class UserController extends Controller
     // Change 6: read-only view of a user record.
     public function show(User $user)
     {
-        $roles = $this->roleService->getAllOrderedByLevel();
+        $roles = Role::orderBy('level')->get();
         $countries = Country::orderBy('name')->get();
 
         return view('users.edit', [
@@ -86,7 +79,7 @@ class UserController extends Controller
         ]);
     }
 
-    public function update(UserRequest $request, User $user)
+    public function update(Request $request, User $user)
     {
         $data = $request->validated();
 
@@ -106,7 +99,7 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
-        $this->service->delete($user->id);
+        $user->delete();
 
         return response()->json(['success' => true]);
     }
@@ -243,7 +236,7 @@ class UserController extends Controller
             }
 
             try {
-                $user = $this->service->create([
+                $user = User::create([
                     'emp_code' => $empCode,
                     'name' => $name,
                     'role_id' => $role->id,
@@ -283,5 +276,24 @@ class UserController extends Controller
             return response()->json(['success' => true, 'message' => $message]);
         }
         return redirect()->route('users.index')->with('success', $message);
+    }
+
+
+    private function rules(?int $id = null): array
+    {
+        return [
+            'emp_code' => ['required', 'string', 'max:50', 'unique:users,emp_code,' . ($id ?? 'NULL')],
+            'role_id' => ['required', 'exists:roles,id'],
+            'name' => ['required', 'string', 'max:255'],
+            'mobile' => ['required', 'string', 'max:15', 'unique:users,mobile,' . ($id ?? 'NULL')],
+            'country_id' => ['nullable', 'exists:countries,id'],
+            'state_id' => ['nullable', 'exists:states,id'],
+            'city_id' => ['nullable', 'exists:cities,id'],
+            'pincode_id' => ['nullable', 'exists:pincodes,id'],
+            'address' => ['nullable', 'string'],
+            'doj' => ['nullable', 'date'],
+            'dob' => ['nullable', 'date'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email,' . ($id ?? 'NULL')],
+        ];
     }
 }
