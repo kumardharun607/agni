@@ -38,10 +38,7 @@ class PermissionController extends Controller
 
     public function edit(Role $role)
     {
-        // Admin is locked: show a clear message page (not 403) so SPA AJAX does not show "Page Load Failed"
-        if (strcasecmp($role->name, 'Admin') === 0) {
-            return view('permissions.locked', compact('role'));
-        }
+        $this->guardSuperAdminRole($role);
 
         $features = PermissionDropdown::orderBy('name')->get();
         $existing = RolePermission::where('role_id', $role->id)->get()->keyBy('permission_dropdown_id');
