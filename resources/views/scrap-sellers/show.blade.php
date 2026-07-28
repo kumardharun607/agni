@@ -83,9 +83,17 @@
 
                 @if($path)
 
-                    <a href="{{ asset('storage/'.$path) }}" target="_blank">
-                        <img src="{{ asset('storage/'.$path) }}"
-                             class="w-full h-32 object-cover rounded-lg border">
+                    @php
+                        $imageUrl = \Illuminate\Support\Facades\Storage::disk('public')->exists($path)
+                            ? \Illuminate\Support\Facades\Storage::url($path)
+                            : asset('storage/' . ltrim($path, '/'));
+                    @endphp
+
+                    <a href="{{ $imageUrl }}" target="_blank" rel="noopener">
+                        <img src="{{ $imageUrl }}"
+                             alt="{{ $label }}"
+                             class="w-full h-32 object-cover rounded-lg border hover:opacity-90 transition"
+                             onerror="this.parentElement.innerHTML='<div class=\'w-full h-32 flex items-center justify-center bg-gray-50 rounded-lg border text-gray-400 text-sm\'>Image not found</div>'">
                     </a>
 
                 @else

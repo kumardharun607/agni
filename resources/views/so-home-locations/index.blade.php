@@ -107,7 +107,7 @@
 
                         <div class="flex justify-center items-center gap-2">
                             <a href="{{ route('so-home-locations.show',$location->id) }}"
-                               target="_blank" title="View"
+                                title="View"
                                class="inline-flex items-center justify-center w-9 h-9 rounded-md bg-gray-700 hover:bg-gray-800 text-white shadow-sm">
                                 <i class="fa fa-eye"></i>
                             </a>

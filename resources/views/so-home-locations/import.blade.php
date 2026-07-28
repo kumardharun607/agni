@@ -10,7 +10,24 @@
         Import SO Home Location
     </h2>
 
-    <form action="{{ route('so-home-locations.import.store') }}"
+    
+    @if(session('error'))
+        <div class="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+            {{ session('error') }}
+        </div>
+    @endif
+
+    @if($errors->any())
+        <div class="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+            <ul class="list-disc list-inside">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+<form action="{{ route('so-home-locations.import.store') }}"
           method="POST"
           enctype="multipart/form-data"
           data-ajax-skip>
