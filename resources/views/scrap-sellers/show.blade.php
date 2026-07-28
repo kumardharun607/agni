@@ -67,35 +67,27 @@
         <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
 
             @foreach([
-                'Shop Image' => $scrapSeller->shop_image,
-                'Godown Image' => $scrapSeller->godown_image,
-                'Pancard Image' => $scrapSeller->pancard_image,
-                'Aadhar Front' => $scrapSeller->aadhar_front_image,
-                'Aadhar Back' => $scrapSeller->aadhar_back_image,
-                'Reg Certificate' => $scrapSeller->reg_certificate_image,
-            ] as $label => $path)
+                'Shop Image' => $scrapSeller->shop_image_url,
+                'Godown Image' => $scrapSeller->godown_image_url,
+                'Pancard Image' => $scrapSeller->pancard_image_url,
+                'Aadhar Front' => $scrapSeller->aadhar_front_image_url,
+                'Aadhar Back' => $scrapSeller->aadhar_back_image_url,
+                'Reg Certificate' => $scrapSeller->reg_certificate_image_url,
+            ] as $label => $imgUrl)
 
             <div>
-
-                <p class="text-sm font-medium text-gray-600 mb-1">
-                    {{ $label }}
-                </p>
-
-                @if($path)
-
-                    <a href="{{ asset('storage/'.$path) }}" target="_blank">
-                        <img src="{{ asset('storage/'.$path) }}"
-                             class="w-full h-32 object-cover rounded-lg border">
-                    </a>
-
+                <p class="text-sm font-medium text-gray-600 mb-1">{{ $label }}</p>
+                @if($imgUrl)
+                    <img src="{{ $imgUrl }}"
+                         alt="{{ $label }}"
+                         class="w-full h-40 object-cover rounded-lg border bg-white"
+                         loading="lazy"
+                         onerror="this.onerror=null; this.replaceWith(Object.assign(document.createElement('div'),{className:'w-full h-40 flex items-center justify-center bg-gray-50 rounded-lg border text-gray-400 text-sm', textContent:'No Image'}));">
                 @else
-
-                    <div class="w-full h-32 flex items-center justify-center bg-gray-50 rounded-lg border text-gray-400 text-sm">
+                    <div class="w-full h-40 flex items-center justify-center bg-gray-50 rounded-lg border text-gray-400 text-sm">
                         No Image
                     </div>
-
                 @endif
-
             </div>
 
             @endforeach

@@ -106,8 +106,7 @@
                     <td class="px-4 py-3">
 
                         <div class="flex justify-center items-center gap-2">
-                            <a href="{{ route('bde-home-locations.show',$location->id) }}"
-                               target="_blank" title="View"
+                            <a href="{{ route('bde-home-locations.show',$location->id) }}" title="View"
                                class="inline-flex items-center justify-center w-9 h-9 rounded-md bg-gray-700 hover:bg-gray-800 text-white shadow-sm">
                                 <i class="fa fa-eye"></i>
                             </a>
@@ -195,6 +194,7 @@ function deleteBdeHomeLocation(id, btn){
             $.ajax({
                 url:'/bde-home-locations/'+id,
                 type:'DELETE',
+                headers:{'X-Requested-With':'XMLHttpRequest','Accept':'application/json'},
                 data:{ _token:'{{ csrf_token() }}' },
                 success:function(res){
                     const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true });

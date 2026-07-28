@@ -16,9 +16,7 @@
 
 <div class="bg-white rounded-xl shadow-sm p-6">
 
-    <form action="{{ route('bde-home-locations.update',$bdeHomeLocation- data-ajax-skip>id) }}"
-          method="POST"
-          >
+    <form action="{{ route('bde-home-locations.update', $bdeHomeLocation->id) }}" method="POST" data-ajax-skip>
 
         @csrf
         @method('PUT')

@@ -116,7 +116,7 @@ class SoHomeLocationController extends Controller
             $soHomeLocation->delete();
 
             return response()->json([
-                'status' => true,
+                'success' => true, 'status' => true,
                 'message' => 'SO Home Location Deleted Successfully'
             ]);
 

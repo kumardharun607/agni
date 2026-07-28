@@ -33,33 +33,27 @@ class ScrapSellerController extends Controller
             $data = $request->validated();
 
             if ($request->hasFile('shop_image')) {
-                $data['shop_image'] = $request->file('shop_image')
-                    ->store('scrap-sellers/shop-images', 'public');
+                $data['shop_image'] = $this->storePublicImage($request->file('shop_image'), 'shop-images');
             }
 
             if ($request->hasFile('godown_image')) {
-                $data['godown_image'] = $request->file('godown_image')
-                    ->store('scrap-sellers/godown-images', 'public');
+                $data['godown_image'] = $this->storePublicImage($request->file('godown_image'), 'godown-images');
             }
 
             if ($request->hasFile('pancard_image')) {
-                $data['pancard_image'] = $request->file('pancard_image')
-                    ->store('scrap-sellers/pancard-images', 'public');
+                $data['pancard_image'] = $this->storePublicImage($request->file('pancard_image'), 'pancard-images');
             }
 
             if ($request->hasFile('aadhar_front_image')) {
-                $data['aadhar_front_image'] = $request->file('aadhar_front_image')
-                    ->store('scrap-sellers/aadhar-front', 'public');
+                $data['aadhar_front_image'] = $this->storePublicImage($request->file('aadhar_front_image'), 'aadhar-front');
             }
 
             if ($request->hasFile('aadhar_back_image')) {
-                $data['aadhar_back_image'] = $request->file('aadhar_back_image')
-                    ->store('scrap-sellers/aadhar-back', 'public');
+                $data['aadhar_back_image'] = $this->storePublicImage($request->file('aadhar_back_image'), 'aadhar-back');
             }
 
             if ($request->hasFile('reg_certificate_image')) {
-                $data['reg_certificate_image'] = $request->file('reg_certificate_image')
-                    ->store('scrap-sellers/reg-certificate', 'public');
+                $data['reg_certificate_image'] = $this->storePublicImage($request->file('reg_certificate_image'), 'reg-certificate');
             }
 
             ScrapSeller::create($data);
@@ -101,61 +95,55 @@ class ScrapSellerController extends Controller
             if ($request->hasFile('shop_image')) {
 
                 if ($scrapSeller->shop_image) {
-                    Storage::disk('public')->delete($scrapSeller->shop_image);
+                    $this->deletePublicImage($scrapSeller->shop_image);
                 }
 
-                $data['shop_image'] = $request->file('shop_image')
-                    ->store('scrap-sellers/shop-images', 'public');
+                $data['shop_image'] = $this->storePublicImage($request->file('shop_image'), 'shop-images');
             }
 
             if ($request->hasFile('godown_image')) {
 
                 if ($scrapSeller->godown_image) {
-                    Storage::disk('public')->delete($scrapSeller->godown_image);
+                    $this->deletePublicImage($scrapSeller->godown_image);
                 }
 
-                $data['godown_image'] = $request->file('godown_image')
-                    ->store('scrap-sellers/godown-images', 'public');
+                $data['godown_image'] = $this->storePublicImage($request->file('godown_image'), 'godown-images');
             }
 
             if ($request->hasFile('pancard_image')) {
 
                 if ($scrapSeller->pancard_image) {
-                    Storage::disk('public')->delete($scrapSeller->pancard_image);
+                    $this->deletePublicImage($scrapSeller->pancard_image);
                 }
 
-                $data['pancard_image'] = $request->file('pancard_image')
-                    ->store('scrap-sellers/pancard-images', 'public');
+                $data['pancard_image'] = $this->storePublicImage($request->file('pancard_image'), 'pancard-images');
             }
 
             if ($request->hasFile('aadhar_front_image')) {
 
                 if ($scrapSeller->aadhar_front_image) {
-                    Storage::disk('public')->delete($scrapSeller->aadhar_front_image);
+                    $this->deletePublicImage($scrapSeller->aadhar_front_image);
                 }
 
-                $data['aadhar_front_image'] = $request->file('aadhar_front_image')
-                    ->store('scrap-sellers/aadhar-front', 'public');
+                $data['aadhar_front_image'] = $this->storePublicImage($request->file('aadhar_front_image'), 'aadhar-front');
             }
 
             if ($request->hasFile('aadhar_back_image')) {
 
                 if ($scrapSeller->aadhar_back_image) {
-                    Storage::disk('public')->delete($scrapSeller->aadhar_back_image);
+                    $this->deletePublicImage($scrapSeller->aadhar_back_image);
                 }
 
-                $data['aadhar_back_image'] = $request->file('aadhar_back_image')
-                    ->store('scrap-sellers/aadhar-back', 'public');
+                $data['aadhar_back_image'] = $this->storePublicImage($request->file('aadhar_back_image'), 'aadhar-back');
             }
 
             if ($request->hasFile('reg_certificate_image')) {
 
                 if ($scrapSeller->reg_certificate_image) {
-                    Storage::disk('public')->delete($scrapSeller->reg_certificate_image);
+                    $this->deletePublicImage($scrapSeller->reg_certificate_image);
                 }
 
-                $data['reg_certificate_image'] = $request->file('reg_certificate_image')
-                    ->store('scrap-sellers/reg-certificate', 'public');
+                $data['reg_certificate_image'] = $this->storePublicImage($request->file('reg_certificate_image'), 'reg-certificate');
             }
 
             $scrapSeller->update($data);
@@ -176,48 +164,61 @@ class ScrapSellerController extends Controller
         }
     }
 
+
+    /**
+     * Store upload under public/uploads so it is web-accessible without storage:link.
+     */
+    private function storePublicImage($file, string $folder): string
+    {
+        $dir = public_path('uploads/scrap-sellers/' . $folder);
+        if (! is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        $name = uniqid('ss_', true) . '.' . $file->getClientOriginalExtension();
+        $file->move($dir, $name);
+
+        return 'uploads/scrap-sellers/' . $folder . '/' . $name;
+    }
+
+    private function deletePublicImage(?string $path): void
+    {
+        if (! $path) {
+            return;
+        }
+        $full = public_path($path);
+        if (is_file($full)) {
+            @unlink($full);
+        }
+        try {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($path);
+        } catch (\Throwable $e) {
+            // ignore
+        }
+    }
+
     public function destroy(ScrapSeller $scrapSeller)
     {
         try {
-
-            if ($scrapSeller->shop_image) {
-                Storage::disk('public')->delete($scrapSeller->shop_image);
-            }
-
-            if ($scrapSeller->godown_image) {
-                Storage::disk('public')->delete($scrapSeller->godown_image);
-            }
-
-            if ($scrapSeller->pancard_image) {
-                Storage::disk('public')->delete($scrapSeller->pancard_image);
-            }
-
-            if ($scrapSeller->aadhar_front_image) {
-                Storage::disk('public')->delete($scrapSeller->aadhar_front_image);
-            }
-
-            if ($scrapSeller->aadhar_back_image) {
-                Storage::disk('public')->delete($scrapSeller->aadhar_back_image);
-            }
-
-            if ($scrapSeller->reg_certificate_image) {
-                Storage::disk('public')->delete($scrapSeller->reg_certificate_image);
+            foreach ([
+                'shop_image', 'godown_image', 'pancard_image',
+                'aadhar_front_image', 'aadhar_back_image', 'reg_certificate_image',
+            ] as $field) {
+                $this->deletePublicImage($scrapSeller->{$field} ?? null);
             }
 
             $scrapSeller->delete();
 
             return response()->json([
+                'success' => true,
                 'status' => true,
-                'message' => 'Scrap Seller Deleted Successfully'
+                'message' => 'Scrap Seller deleted successfully.',
             ]);
-
-        } catch (\Exception $e) {
-
+        } catch (\Throwable $e) {
             return response()->json([
+                'success' => false,
                 'status' => false,
-                'message' => 'This scrap seller cannot be deleted as it is linked with other records.'
+                'message' => 'Unable to delete this Scrap Seller. Please try again.',
             ], 422);
-
         }
     }
 }

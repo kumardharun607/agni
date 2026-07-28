@@ -68,22 +68,7 @@ class ScrapSeller extends Model
             return $path;
         }
 
-        $path = ltrim(str_replace('\\', '/', $path), '/');
-
-        // New uploads saved under public/uploads/...
-        if (str_starts_with($path, 'uploads/')) {
-            return asset($path);
-        }
-
-        // Legacy public disk paths (storage/app/public/...)
-        if (file_exists(public_path('storage/'.$path))) {
-            return asset('storage/'.$path);
-        }
-        if (file_exists(public_path($path))) {
-            return asset($path);
-        }
-
-        return asset('storage/'.$path);
+        return asset('storage/'.ltrim($path, '/'));
     }
 
     public function getShopImageUrlAttribute(): ?string

@@ -154,8 +154,7 @@
                     <td class="px-4 py-3">
 
                         <div class="flex justify-center items-center gap-2">
-                            <a href="{{ route('scrap-sellers.show',$seller->id) }}"
-                               target="_blank" title="View"
+                            <a href="{{ route('scrap-sellers.show',$seller->id) }}" title="View"
                                class="inline-flex items-center justify-center w-9 h-9 rounded-md bg-gray-700 hover:bg-gray-800 text-white shadow-sm">
                                 <i class="fa fa-eye"></i>
                             </a>
@@ -223,120 +222,57 @@ $("#searchScrapSeller").keyup(function(){
 });
 
 function deleteSeller(id, btn){
-
-let $row = $(btn).closest('tr');
-
-Swal.fire({
-
-title:'Delete?',
-
-text:'This record will be deleted.',
-
-icon:'warning',
-
-showCancelButton:true,
-
-confirmButtonColor:'#dc2626',
-
-confirmButtonText:'Delete'
-
-}).then((result)=>{
-
-if(result.isConfirmed){
-
-$.ajax({
-
-url:'/scrap-sellers/'+id,
-
-type:'DELETE',
-
-data:{
-
-_token:'{{ csrf_token() }}'
-
-},
-
-success:function(res){
-    const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true });
-    Toast.fire({ icon: 'success', title: (res && res.message) ? res.message : 'Deleted successfully' });
-    $row.fadeOut(250, function(){ $(this).remove(); });
-},
-
-error:function(xhr){
-    let msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Something went wrong.';
-    const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 4000, timerProgressBar: true });
-    Toast.fire({ icon: 'error', title: msg });
-}
-
-});
-
-}
-
-});
-
-}).then((result)=>{
-
-if(result.isConfirmed){
-
-$.ajax({
-
-url:'/scrap-sellers/'+id,
-
-type:'DELETE',
-
-data:{
-
-_token:'{{ csrf_token() }}'
-
-},
-
-success:function(res){
-
-const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true });
-                    Toast.fire({ icon: 'success', title: 'Deleted successfully' });
-                    (function(){
-
-    $row.fadeOut(250,function(){
-
-        $(this).remove();
-
-        if($("#scrapSellerTable tbody tr").length===0){
-
-            $("#scrapSellerTable tbody").html(
-                '<tr><td colspan="10" class="text-center py-8 text-gray-500">No Records Found</td></tr>'
-            );
-
-        }
-
-    });
-
-});
-
-},
-
-error:function(xhr){
-
-    let msg = (xhr.responseJSON && xhr.responseJSON.message)
-        ? xhr.responseJSON.message
-        : "Something went wrong. Please try again.";
+    let $row = $(btn).closest('tr');
 
     Swal.fire({
-        icon:'error',
-        title:'Error',
-        text: msg,
-        confirmButtonColor:'#dc2626'
+        title: 'Delete?',
+        text: 'This record will be deleted.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        confirmButtonText: 'Delete'
+    }).then(function(result){
+        if (!result.isConfirmed) return;
+
+        $.ajax({
+            url: @json(url('/scrap-sellers')) + '/' + id,
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                _token: @json(csrf_token()),
+                _method: 'DELETE'
+            },
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            success: function(res){
+                const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true });
+                Toast.fire({ icon: 'success', title: (res && res.message) ? res.message : 'Deleted successfully' });
+                $row.fadeOut(250, function(){
+                    $(this).remove();
+                    if ($("#scrapSellerTable tbody tr:visible").length === 0) {
+                        $("#scrapSellerTable tbody").html(
+                            '<tr><td colspan="10" class="text-center py-8 text-gray-500">No Records Found</td></tr>'
+                        );
+                    }
+                });
+            },
+            error: function(xhr){
+                let msg = (xhr.responseJSON && xhr.responseJSON.message)
+                    ? xhr.responseJSON.message
+                    : 'Something went wrong. Please try again.';
+                const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 4000, timerProgressBar: true });
+                Toast.fire({ icon: 'error', title: msg });
+            }
+        });
     });
-
-}
-
-});
-
-}
-
-});
-
 }
 
 </script>
+
+
+
+
 
 @endpush
