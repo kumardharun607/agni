@@ -3,19 +3,11 @@
 namespace App\Http\Controllers\ScrapSeller;
 
 use App\Http\Controllers\Controller;
-<<<<<<< HEAD
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\ScrapSellerImport;
 use App\Exports\ScrapSellerExport;
-=======
-use App\Exports\ScrapSellerExport;
-use App\Imports\ScrapSellerImport;
-use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
-use Maatwebsite\Excel\Facades\Excel;
->>>>>>> b1d09de9960bbbdde66a81dfd9cc085dec352046
 
 class ScrapSellerImportController extends Controller
 {
@@ -27,7 +19,6 @@ class ScrapSellerImportController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-<<<<<<< HEAD
             'file' => 'required|mimes:xlsx,csv,xls'
         ]);
 
@@ -64,33 +55,13 @@ class ScrapSellerImportController extends Controller
             }
             return back()->with('error', 'Import failed: ' . $msg);
         }
-=======
-            'file' => 'required|file|mimes:xlsx,csv,xls',
-        ]);
-
-        try {
-            Excel::import(new ScrapSellerImport, $request->file('file'));
-        } catch (ValidationException $e) {
-            return back()->withErrors($e->errors());
-        } catch (\Throwable $e) {
-            return back()->withErrors([
-                'file' => 'Invalid file or column names. Please export Scrap Sellers first and use the same column headers (company_name is required).',
-            ]);
-        }
-
-        return redirect()->route('scrap-sellers.index')->with('success', 'Scrap Sellers imported successfully.');
->>>>>>> b1d09de9960bbbdde66a81dfd9cc085dec352046
     }
 
     public function export()
     {
-<<<<<<< HEAD
         return Excel::download(
             new ScrapSellerExport,
             'scrap_sellers.xlsx'
         );
-=======
-        return Excel::download(new ScrapSellerExport, 'scrap_sellers.xlsx');
->>>>>>> b1d09de9960bbbdde66a81dfd9cc085dec352046
     }
 }

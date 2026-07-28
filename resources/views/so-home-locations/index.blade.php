@@ -106,12 +106,8 @@
                     <td class="px-4 py-3">
 
                         <div class="flex justify-center items-center gap-2">
-<<<<<<< HEAD
                             <a href="{{ route('so-home-locations.show',$location->id) }}"
                                 title="View"
-=======
-                            <a href="{{ route('so-home-locations.show',$location->id) }}" title="View"
->>>>>>> b1d09de9960bbbdde66a81dfd9cc085dec352046
                                class="inline-flex items-center justify-center w-9 h-9 rounded-md bg-gray-700 hover:bg-gray-800 text-white shadow-sm">
                                 <i class="fa fa-eye"></i>
                             </a>
@@ -199,7 +195,6 @@ function deleteSoHomeLocation(id, btn){
             $.ajax({
                 url:'/so-home-locations/'+id,
                 type:'DELETE',
-                headers:{'X-Requested-With':'XMLHttpRequest','Accept':'application/json'},
                 data:{ _token:'{{ csrf_token() }}' },
                 success:function(res){
                     const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true });

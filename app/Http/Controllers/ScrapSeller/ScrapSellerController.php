@@ -6,15 +6,28 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ScrapSeller\StoreScrapSellerRequest;
 use App\Http\Requests\ScrapSeller\UpdateScrapSellerRequest;
 use App\Models\ScrapSeller;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 
 class ScrapSellerController extends Controller
 {
+    /**
+     * Image field => folder under public/uploads/
+     */
+    private array $imageFields = [
+        'shop_image'            => 'uploads/scrap-sellers/shop-images',
+        'godown_image'          => 'uploads/scrap-sellers/godown-images',
+        'pancard_image'         => 'uploads/scrap-sellers/pancard-images',
+        'aadhar_front_image'    => 'uploads/scrap-sellers/aadhar-front',
+        'aadhar_back_image'     => 'uploads/scrap-sellers/aadhar-back',
+        'reg_certificate_image' => 'uploads/scrap-sellers/reg-certificate',
+    ];
+
     public function index()
     {
-        $scrapSellers = ScrapSeller::latest()
-            ->paginate(10);
+        $scrapSellers = ScrapSeller::latest()->paginate(10);
 
         return view('scrap-sellers.index', compact('scrapSellers'));
     }
@@ -29,31 +42,12 @@ class ScrapSellerController extends Controller
         DB::beginTransaction();
 
         try {
+            $data = $request->safe()->except(array_keys($this->imageFields));
 
-            $data = $request->validated();
-
-            if ($request->hasFile('shop_image')) {
-                $data['shop_image'] = $this->storePublicImage($request->file('shop_image'), 'shop-images');
-            }
-
-            if ($request->hasFile('godown_image')) {
-                $data['godown_image'] = $this->storePublicImage($request->file('godown_image'), 'godown-images');
-            }
-
-            if ($request->hasFile('pancard_image')) {
-                $data['pancard_image'] = $this->storePublicImage($request->file('pancard_image'), 'pancard-images');
-            }
-
-            if ($request->hasFile('aadhar_front_image')) {
-                $data['aadhar_front_image'] = $this->storePublicImage($request->file('aadhar_front_image'), 'aadhar-front');
-            }
-
-            if ($request->hasFile('aadhar_back_image')) {
-                $data['aadhar_back_image'] = $this->storePublicImage($request->file('aadhar_back_image'), 'aadhar-back');
-            }
-
-            if ($request->hasFile('reg_certificate_image')) {
-                $data['reg_certificate_image'] = $this->storePublicImage($request->file('reg_certificate_image'), 'reg-certificate');
+            foreach ($this->imageFields as $field => $folder) {
+                if ($request->hasFile($field)) {
+                    $data[$field] = $this->storeImage($request->file($field), $folder);
+                }
             }
 
             ScrapSeller::create($data);
@@ -65,7 +59,6 @@ class ScrapSellerController extends Controller
                 ->with('success', 'Scrap Seller Created Successfully');
 
         } catch (\Exception $e) {
-
             DB::rollBack();
 
             return back()
@@ -89,61 +82,13 @@ class ScrapSellerController extends Controller
         DB::beginTransaction();
 
         try {
+            $data = $request->safe()->except(array_keys($this->imageFields));
 
-            $data = $request->validated();
-
-            if ($request->hasFile('shop_image')) {
-
-                if ($scrapSeller->shop_image) {
-                    $this->deletePublicImage($scrapSeller->shop_image);
+            foreach ($this->imageFields as $field => $folder) {
+                if ($request->hasFile($field)) {
+                    $this->deleteImage($scrapSeller->{$field});
+                    $data[$field] = $this->storeImage($request->file($field), $folder);
                 }
-
-                $data['shop_image'] = $this->storePublicImage($request->file('shop_image'), 'shop-images');
-            }
-
-            if ($request->hasFile('godown_image')) {
-
-                if ($scrapSeller->godown_image) {
-                    $this->deletePublicImage($scrapSeller->godown_image);
-                }
-
-                $data['godown_image'] = $this->storePublicImage($request->file('godown_image'), 'godown-images');
-            }
-
-            if ($request->hasFile('pancard_image')) {
-
-                if ($scrapSeller->pancard_image) {
-                    $this->deletePublicImage($scrapSeller->pancard_image);
-                }
-
-                $data['pancard_image'] = $this->storePublicImage($request->file('pancard_image'), 'pancard-images');
-            }
-
-            if ($request->hasFile('aadhar_front_image')) {
-
-                if ($scrapSeller->aadhar_front_image) {
-                    $this->deletePublicImage($scrapSeller->aadhar_front_image);
-                }
-
-                $data['aadhar_front_image'] = $this->storePublicImage($request->file('aadhar_front_image'), 'aadhar-front');
-            }
-
-            if ($request->hasFile('aadhar_back_image')) {
-
-                if ($scrapSeller->aadhar_back_image) {
-                    $this->deletePublicImage($scrapSeller->aadhar_back_image);
-                }
-
-                $data['aadhar_back_image'] = $this->storePublicImage($request->file('aadhar_back_image'), 'aadhar-back');
-            }
-
-            if ($request->hasFile('reg_certificate_image')) {
-
-                if ($scrapSeller->reg_certificate_image) {
-                    $this->deletePublicImage($scrapSeller->reg_certificate_image);
-                }
-
-                $data['reg_certificate_image'] = $this->storePublicImage($request->file('reg_certificate_image'), 'reg-certificate');
             }
 
             $scrapSeller->update($data);
@@ -155,7 +100,6 @@ class ScrapSellerController extends Controller
                 ->with('success', 'Scrap Seller Updated Successfully');
 
         } catch (\Exception $e) {
-
             DB::rollBack();
 
             return back()
@@ -164,61 +108,59 @@ class ScrapSellerController extends Controller
         }
     }
 
-
-    /**
-     * Store upload under public/uploads so it is web-accessible without storage:link.
-     */
-    private function storePublicImage($file, string $folder): string
-    {
-        $dir = public_path('uploads/scrap-sellers/' . $folder);
-        if (! is_dir($dir)) {
-            mkdir($dir, 0755, true);
-        }
-        $name = uniqid('ss_', true) . '.' . $file->getClientOriginalExtension();
-        $file->move($dir, $name);
-
-        return 'uploads/scrap-sellers/' . $folder . '/' . $name;
-    }
-
-    private function deletePublicImage(?string $path): void
-    {
-        if (! $path) {
-            return;
-        }
-        $full = public_path($path);
-        if (is_file($full)) {
-            @unlink($full);
-        }
-        try {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($path);
-        } catch (\Throwable $e) {
-            // ignore
-        }
-    }
-
     public function destroy(ScrapSeller $scrapSeller)
     {
         try {
-            foreach ([
-                'shop_image', 'godown_image', 'pancard_image',
-                'aadhar_front_image', 'aadhar_back_image', 'reg_certificate_image',
-            ] as $field) {
-                $this->deletePublicImage($scrapSeller->{$field} ?? null);
+            foreach (array_keys($this->imageFields) as $field) {
+                $this->deleteImage($scrapSeller->{$field});
             }
 
             $scrapSeller->delete();
 
             return response()->json([
-                'success' => true,
-                'status' => true,
-                'message' => 'Scrap Seller deleted successfully.',
+                'status'  => true,
+                'message' => 'Scrap Seller Deleted Successfully',
             ]);
-        } catch (\Throwable $e) {
+
+        } catch (\Exception $e) {
             return response()->json([
-                'success' => false,
-                'status' => false,
-                'message' => 'Unable to delete this Scrap Seller. Please try again.',
+                'status'  => false,
+                'message' => 'This scrap seller cannot be deleted as it is linked with other records.',
             ], 422);
+        }
+    }
+
+    /**
+     * Store file under public/{folder}/ and return relative path for DB.
+     */
+    private function storeImage(UploadedFile $file, string $folder): string
+    {
+        $dir = public_path($folder);
+
+        if (! File::isDirectory($dir)) {
+            File::makeDirectory($dir, 0755, true);
+        }
+
+        $name = 'ss_' . uniqid() . '.' . $file->getClientOriginalExtension();
+        $file->move($dir, $name);
+
+        // e.g. uploads/scrap-sellers/shop-images/ss_xxx.jpg
+        return $folder . '/' . $name;
+    }
+
+    /**
+     * Delete image from public/ if path is set.
+     */
+    private function deleteImage(?string $path): void
+    {
+        if (empty($path)) {
+            return;
+        }
+
+        $full = public_path(ltrim(str_replace('\\', '/', $path), '/'));
+
+        if (File::exists($full) && File::isFile($full)) {
+            File::delete($full);
         }
     }
 }
