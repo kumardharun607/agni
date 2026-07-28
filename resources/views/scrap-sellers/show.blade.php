@@ -57,68 +57,80 @@
 />
 
 <div class="max-w-5xl mx-auto mt-6">
-
     <div class="bg-white rounded-xl shadow-sm p-6">
-
-        <h3 class="text-lg font-semibold mb-4">
-            Uploaded Images
-        </h3>
+        <h3 class="text-lg font-semibold mb-4">Uploaded Images</h3>
 
         <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+            @php
+                $images = [
+                    'Shop Image'      => $scrapSeller->shop_image,
+                    'Godown Image'    => $scrapSeller->godown_image,
+                    'Pancard Image'   => $scrapSeller->pancard_image,
+                    'Aadhar Front'    => $scrapSeller->aadhar_front_image,
+                    'Aadhar Back'     => $scrapSeller->aadhar_back_image,
+                    'Reg Certificate' => $scrapSeller->reg_certificate_image,
+                ];
+            @endphp
 
-            @foreach([
-                'Shop Image' => $scrapSeller->shop_image_url,
-                'Godown Image' => $scrapSeller->godown_image_url,
-                'Pancard Image' => $scrapSeller->pancard_image_url,
-                'Aadhar Front' => $scrapSeller->aadhar_front_image_url,
-                'Aadhar Back' => $scrapSeller->aadhar_back_image_url,
-                'Reg Certificate' => $scrapSeller->reg_certificate_image_url,
-            ] as $label => $imgUrl)
+            @foreach($images as $label => $path)
+                <div>
+                    <p class="text-sm font-medium text-gray-600 mb-1">{{ $label }}</p>
 
-            <div>
-<<<<<<< HEAD
+                    @if($path)
+                        @php
+                            $clean = ltrim(str_replace('\\', '/', $path), '/');
 
-                <p class="text-sm font-medium text-gray-600 mb-1">
-                    {{ $label }}
-                </p>
+                            // Your files live under public/uploads/...
+                            // DB path example: uploads/scrap-sellers/shop-images/xxx.jpg
+                            $imageUrl = null;
+                            $fileExists = false;
 
-                @if($path)
+                            // 1) Path relative to public/ (uploads/...)
+                            if (file_exists(public_path($clean))) {
+                                $fileExists = true;
+                                $imageUrl = asset($clean);
+                            }
+                            // 2) Laravel public disk (storage/app/public/...)
+                            elseif (\Illuminate\Support\Facades\Storage::disk('public')->exists($clean)) {
+                                $fileExists = true;
+                                $imageUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($clean);
+                            }
+                            // 3) Path already includes storage/
+                            elseif (str_starts_with($clean, 'storage/') && file_exists(public_path($clean))) {
+                                $fileExists = true;
+                                $imageUrl = asset($clean);
+                            }
+                            // 4) Fallback URL (may 404 if file really missing)
+                            else {
+                                if (str_starts_with($clean, 'uploads/')) {
+                                    $imageUrl = asset($clean);
+                                } else {
+                                    $imageUrl = asset('storage/' . $clean);
+                                }
+                            }
+                        @endphp
 
-                    @php
-                        $imageUrl = \Illuminate\Support\Facades\Storage::disk('public')->exists($path)
-                            ? \Illuminate\Support\Facades\Storage::url($path)
-                            : asset('storage/' . ltrim($path, '/'));
-                    @endphp
-
-                    <a href="{{ $imageUrl }}" target="_blank" rel="noopener">
-                        <img src="{{ $imageUrl }}"
-                             alt="{{ $label }}"
-                             class="w-full h-32 object-cover rounded-lg border hover:opacity-90 transition"
-                             onerror="this.parentElement.innerHTML='<div class=\'w-full h-32 flex items-center justify-center bg-gray-50 rounded-lg border text-gray-400 text-sm\'>Image not found</div>'">
-                    </a>
-
-=======
-                <p class="text-sm font-medium text-gray-600 mb-1">{{ $label }}</p>
-                @if($imgUrl)
-                    <img src="{{ $imgUrl }}"
-                         alt="{{ $label }}"
-                         class="w-full h-40 object-cover rounded-lg border bg-white"
-                         loading="lazy"
-                         onerror="this.onerror=null; this.replaceWith(Object.assign(document.createElement('div'),{className:'w-full h-40 flex items-center justify-center bg-gray-50 rounded-lg border text-gray-400 text-sm', textContent:'No Image'}));">
->>>>>>> b1d09de9960bbbdde66a81dfd9cc085dec352046
-                @else
-                    <div class="w-full h-40 flex items-center justify-center bg-gray-50 rounded-lg border text-gray-400 text-sm">
-                        No Image
-                    </div>
-                @endif
-            </div>
-
+                        @if($fileExists)
+                            <a href="{{ $imageUrl }}" target="_blank" rel="noopener">
+                                <img src="{{ $imageUrl }}"
+                                     alt="{{ $label }}"
+                                     class="w-full h-32 object-cover rounded-lg border hover:opacity-90 transition">
+                            </a>
+                        @else
+                            <div class="w-full h-32 flex flex-col items-center justify-center bg-yellow-50 rounded-lg border border-yellow-200 text-yellow-700 text-xs p-2 text-center">
+                                <span>File missing on disk</span>
+                                <span class="mt-1 break-all opacity-70">{{ $clean }}</span>
+                            </div>
+                        @endif
+                    @else
+                        <div class="w-full h-32 flex items-center justify-center bg-gray-50 rounded-lg border text-gray-400 text-sm">
+                            No Image
+                        </div>
+                    @endif
+                </div>
             @endforeach
-
         </div>
-
     </div>
-
 </div>
 
 @endsection

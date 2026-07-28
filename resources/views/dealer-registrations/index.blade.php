@@ -20,7 +20,7 @@
     <table id="dt" class="w-full">
       <thead>
         <tr class="text-left text-[11px] uppercase text-gray-500 border-b border-border">
-          <th class="py-2">#</th>
+          <th class="py-2">S.NO</th>
           <th>Apply No</th>
           <th>Alias ID</th>
           <th>Firm Name</th>

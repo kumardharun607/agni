@@ -304,9 +304,9 @@ $directions = \App\Http\Controllers\DealerRegistration\DealerRegistrationControl
             <div class="flex flex-wrap items-start gap-4">
 
                 {{-- EXISTING SHOP IMAGE --}}
-                @if($dealer->exists && $dealer->shop_image)
+                @if($dealer->exists && $dealer->photo_upload1)
                     @php
-                        $shopImagePath = $dealer->shop_image;
+                        $shopImagePath = $dealer->photo_upload1;
 
                         if (
                             \Illuminate\Support\Str::startsWith($shopImagePath, ['http://', 'https://'])
@@ -329,7 +329,7 @@ $directions = \App\Http\Controllers\DealerRegistration\DealerRegistrationControl
                         <img
                             src="{{ $shopImageUrl }}"
                             alt="Existing Shop Image"
-                            class="img-preview-fixed"
+                            style="width:280px;height:200px;object-fit:contain;object-position:center;background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;display:block;"
                             onerror="this.style.display='none'; document.getElementById('shop-image-error').classList.remove('hidden');"
                         >
 
@@ -347,7 +347,7 @@ $directions = \App\Http\Controllers\DealerRegistration\DealerRegistrationControl
 
                     <img
                         id="shop_image_preview"
-                        class="img-preview-fixed"
+                        style="width:280px;height:200px;object-fit:contain;object-position:center;background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;display:block;"
                         src=""
                         alt="New Shop Image Preview"
                     >
@@ -378,9 +378,9 @@ $directions = \App\Http\Controllers\DealerRegistration\DealerRegistrationControl
             <div class="flex flex-wrap items-start gap-4">
 
                 {{-- EXISTING GODOWN IMAGE --}}
-                @if($dealer->exists && $dealer->godown_image)
+                @if($dealer->exists && $dealer->photo_upload2)
                     @php
-                        $godownImagePath = $dealer->godown_image;
+                        $godownImagePath = $dealer->photo_upload2;
 
                         if (
                             \Illuminate\Support\Str::startsWith($godownImagePath, ['http://', 'https://'])
@@ -403,7 +403,7 @@ $directions = \App\Http\Controllers\DealerRegistration\DealerRegistrationControl
                         <img
                             src="{{ $godownImageUrl }}"
                             alt="Existing Godown Image"
-                            class="img-preview-fixed"
+                            style="width:280px;height:200px;object-fit:contain;object-position:center;background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;display:block;"
                             onerror="this.style.display='none'; document.getElementById('godown-image-error').classList.remove('hidden');"
                         >
 
@@ -421,7 +421,7 @@ $directions = \App\Http\Controllers\DealerRegistration\DealerRegistrationControl
 
                     <img
                         id="godown_image_preview"
-                        class="img-preview-fixed"
+                        style="width:280px;height:200px;object-fit:contain;object-position:center;background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;display:block;"
                         src=""
                         alt="New Godown Image Preview"
                     >
@@ -457,12 +457,33 @@ Reset
 @push('styles')
 <style>
 .img-preview-fixed {
-    width: 160px;
-    height: 120px;
-    object-fit: cover;
+    width: 280px !important;
+    height: 200px !important;
+    max-width: 280px !important;
+    max-height: 200px !important;
+    object-fit: contain !important;
+    object-position: center !important;
     border-radius: 8px;
     border: 1px solid #cbd5e1;
     background: #f8fafc;
+    display: block !important;
+}
+.dealer-img-box {
+    width: 280px;
+    height: 200px;
+    overflow: hidden;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.dealer-img-box img {
+    width: 280px !important;
+    height: 200px !important;
+    object-fit: contain !important;
+    object-position: center !important;
 }
 </style>
 @endpush

@@ -91,9 +91,9 @@
 
             $shopImageUrl = null;
 
-            if (!empty($dealer->shop_image)) {
+            if (!empty($dealer->photo_upload1)) {
 
-                $shopImagePath = trim((string) $dealer->shop_image);
+                $shopImagePath = trim((string) $dealer->photo_upload1);
 
                 if (
                     \Illuminate\Support\Str::startsWith(
@@ -133,9 +133,9 @@
 
             $godownImageUrl = null;
 
-            if (!empty($dealer->godown_image)) {
+            if (!empty($dealer->photo_upload2)) {
 
-                $godownImagePath = trim((string) $dealer->godown_image);
+                $godownImagePath = trim((string) $dealer->photo_upload2);
 
                 if (
                     \Illuminate\Support\Str::startsWith(
@@ -771,7 +771,7 @@
                                 src="{{ $shopImageUrl }}"
                                 alt="Shop Image"
                                 class="mx-auto rounded-lg border border-slate-300 object-cover shadow-sm"
-                                style="width:260px;height:200px;"
+                                style="width:280px;height:200px;object-fit:contain;object-position:center;background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;display:block;"
                                 onerror="this.style.display='none'; document.getElementById('shop-image-error').classList.remove('hidden');"
                             >
 
@@ -822,7 +822,7 @@
                                 src="{{ $godownImageUrl }}"
                                 alt="Godown Image"
                                 class="mx-auto rounded-lg border border-slate-300 object-cover shadow-sm"
-                                style="width:260px;height:200px;"
+                                style="width:280px;height:200px;object-fit:contain;object-position:center;background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;display:block;"
                                 onerror="this.style.display='none'; document.getElementById('godown-image-error').classList.remove('hidden');"
                             >
 
