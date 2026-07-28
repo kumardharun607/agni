@@ -269,15 +269,14 @@ Route::middleware('auth')->group(function () {
     Route::get('scrap-sellers/import', [ScrapSellerImportController::class, 'index'])->name('scrap-sellers.import')->middleware('permission:ScrapSeller,add');
     Route::post('scrap-sellers/import', [ScrapSellerImportController::class, 'store'])->name('scrap-sellers.import.store')->middleware('permission:ScrapSeller,add');
     Route::get('scrap-sellers/export', [ScrapSellerImportController::class, 'export'])->name('scrap-sellers.export')->middleware('permission:ScrapSeller,view');
-    Route::resource('scrap-sellers', ScrapSellerController::class)->middleware([
-        'index' => 'permission:ScrapSeller,view',
-        'show' => 'permission:ScrapSeller,view',
-        'create' => 'permission:ScrapSeller,add',
-        'store' => 'permission:ScrapSeller,add',
-        'edit' => 'permission:ScrapSeller,edit',
-        'update' => 'permission:ScrapSeller,edit',
-        'destroy' => 'permission:ScrapSeller,delete',
-    ]);
+    Route::get('scrap-sellers', [ScrapSellerController::class, 'index'])->name('scrap-sellers.index')->middleware('permission:ScrapSeller,view');
+    Route::get('scrap-sellers/create', [ScrapSellerController::class, 'create'])->name('scrap-sellers.create')->middleware('permission:ScrapSeller,add');
+    Route::post('scrap-sellers', [ScrapSellerController::class, 'store'])->name('scrap-sellers.store')->middleware('permission:ScrapSeller,add');
+    Route::get('scrap-sellers/{scrap_seller}', [ScrapSellerController::class, 'show'])->name('scrap-sellers.show')->middleware('permission:ScrapSeller,view');
+    Route::get('scrap-sellers/{scrap_seller}/edit', [ScrapSellerController::class, 'edit'])->name('scrap-sellers.edit')->middleware('permission:ScrapSeller,edit');
+    Route::put('scrap-sellers/{scrap_seller}', [ScrapSellerController::class, 'update'])->name('scrap-sellers.update')->middleware('permission:ScrapSeller,edit');
+    Route::patch('scrap-sellers/{scrap_seller}', [ScrapSellerController::class, 'update'])->middleware('permission:ScrapSeller,edit');
+    Route::delete('scrap-sellers/{scrap_seller}', [ScrapSellerController::class, 'destroy'])->name('scrap-sellers.destroy')->middleware('permission:ScrapSeller,delete');
 
     Route::get('bde-home-locations/import', [BdeHomeLocationImportController::class, 'index'])->name('bde-home-locations.import')->middleware('permission:BdeHomeLocation,add');
     Route::post('bde-home-locations/import', [BdeHomeLocationImportController::class, 'store'])->name('bde-home-locations.import.store')->middleware('permission:BdeHomeLocation,add');

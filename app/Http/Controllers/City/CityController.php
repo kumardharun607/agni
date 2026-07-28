@@ -94,7 +94,14 @@ class CityController extends Controller
     public function import(Request $request)
     {
         $request->validate(['file' => 'required|file|mimes:csv,txt,xlsx,xls']);
-        $rows = $this->readCsv($request->file('file'));
+        try {
+            $rows = $this->readSpreadsheet($request->file('file'), [['Name', 'name', 'city_name'], ['State', 'state']]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => collect($e->errors())->flatten()->first()], 422);
+            }
+            return back()->withErrors($e->errors());
+        }
 
         $count = 0;
         foreach ($rows as $row) {
@@ -108,6 +115,13 @@ class CityController extends Controller
             $count++;
         }
 
+        if ($count === 0) {
+            $message = 'No valid rows found. Required columns: Name, State (state must already exist).';
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 422);
+            }
+            return back()->withErrors(['file' => $message]);
+        }
         $message = "$count cities imported successfully.";
         if ($request->expectsJson()) {
             return response()->json(['success' => true, 'message' => $message]);

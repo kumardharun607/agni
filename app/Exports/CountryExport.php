@@ -11,12 +11,12 @@ class CountryExport implements FromCollection, WithHeadings, WithMapping
 {
     public function collection()
     {
-        return Country::orderBy('name')->get();
+        return Country::orderBy('id')->get();
     }
 
     public function headings(): array
     {
-        return ['ID', 'Name', 'Code', 'Created At', 'Updated At'];
+        return ['id', 'name', 'code', 'created_at', 'updated_at'];
     }
 
     public function map($row): array
@@ -25,8 +25,8 @@ class CountryExport implements FromCollection, WithHeadings, WithMapping
             $row->id,
             $row->name,
             $row->code,
-            $row->created_at,
-            $row->updated_at,
+            optional($row->created_at)?->toDateTimeString(),
+            optional($row->updated_at)?->toDateTimeString(),
         ];
     }
 }

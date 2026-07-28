@@ -14,10 +14,7 @@
 
 <div class="max-w-5xl mx-auto">
 
-<form action="{{ route('scrap-sellers.update',$scrapSeller- data-ajax-skip>id) }}"
-      method="POST"
-      
-      enctype="multipart/form-data">
+<form action="{{ route('scrap-sellers.update', $scrapSeller->id) }}" method="POST" enctype="multipart/form-data" data-ajax-skip>
 
     @csrf
     @method('PUT')
@@ -523,9 +520,9 @@
         <div>
             <label class="font-semibold">Shop Image</label>
 
-            @if($scrapSeller->shop_image)
-                <img src="{{ asset('storage/'.$scrapSeller->shop_image) }}"
-                     class="w-20 h-20 object-cover rounded mb-2">
+            @if($scrapSeller->shop_image_url)
+                <img src="{{ $scrapSeller->shop_image_url }}"
+                     class="w-40 h-32 object-cover rounded mb-2 border">
             @endif
 
             <input type="file"
@@ -538,9 +535,9 @@
         <div>
             <label class="font-semibold">Godown Image</label>
 
-            @if($scrapSeller->godown_image)
-                <img src="{{ asset('storage/'.$scrapSeller->godown_image) }}"
-                     class="w-20 h-20 object-cover rounded mb-2">
+            @if($scrapSeller->godown_image_url)
+                <img src="{{ $scrapSeller->godown_image_url }}"
+                     class="w-40 h-32 object-cover rounded mb-2 border">
             @endif
 
             <input type="file"
@@ -553,9 +550,9 @@
         <div>
             <label class="font-semibold">PAN Card Image</label>
 
-            @if($scrapSeller->pancard_image)
-                <img src="{{ asset('storage/'.$scrapSeller->pancard_image) }}"
-                     class="w-20 h-20 object-cover rounded mb-2">
+            @if($scrapSeller->pancard_image_url)
+                <img src="{{ $scrapSeller->pancard_image_url }}"
+                     class="w-40 h-32 object-cover rounded mb-2 border">
             @endif
 
             <input type="file"
@@ -568,9 +565,9 @@
         <div>
             <label class="font-semibold">Aadhaar Front Image</label>
 
-            @if($scrapSeller->aadhar_front_image)
-                <img src="{{ asset('storage/'.$scrapSeller->aadhar_front_image) }}"
-                     class="w-20 h-20 object-cover rounded mb-2">
+            @if($scrapSeller->aadhar_front_image_url)
+                <img src="{{ $scrapSeller->aadhar_front_image_url }}"
+                     class="w-40 h-32 object-cover rounded mb-2 border">
             @endif
 
             <input type="file"
@@ -583,9 +580,9 @@
         <div>
             <label class="font-semibold">Aadhaar Back Image</label>
 
-            @if($scrapSeller->aadhar_back_image)
-                <img src="{{ asset('storage/'.$scrapSeller->aadhar_back_image) }}"
-                     class="w-20 h-20 object-cover rounded mb-2">
+            @if($scrapSeller->aadhar_back_image_url)
+                <img src="{{ $scrapSeller->aadhar_back_image_url }}"
+                     class="w-40 h-32 object-cover rounded mb-2 border">
             @endif
 
             <input type="file"
@@ -598,9 +595,9 @@
         <div>
             <label class="font-semibold">Registration Certificate</label>
 
-            @if($scrapSeller->reg_certificate_image)
-                <img src="{{ asset('storage/'.$scrapSeller->reg_certificate_image) }}"
-                     class="w-20 h-20 object-cover rounded mb-2">
+            @if($scrapSeller->reg_certificate_image_url)
+                <img src="{{ $scrapSeller->reg_certificate_image_url }}"
+                     class="w-40 h-32 object-cover rounded mb-2 border">
             @endif
 
             <input type="file"

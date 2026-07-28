@@ -3,22 +3,16 @@
 namespace App\Traits;
 
 use Illuminate\Http\UploadedFile;
+use Illuminate\Validation\ValidationException;
+use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * Dependency-free "Import Excel / Export Excel" support used by every Masters
- * controller. Works with plain .csv (which Excel opens natively) so no extra
- * composer package is required.
+ * Shared Import / Export helpers used by Masters controllers.
+ * Supports CSV and Excel (.xlsx/.xls) for import.
  */
 trait HasCsvIO
 {
-    /**
-     * Stream a CSV file to the browser as a download.
-     *
-     * @param  string          $filename
-     * @param  array           $headers   column headers, e.g. ['ID','Name','Code']
-     * @param  iterable<array> $rows      each row is a plain array matching $headers
-     */
     protected function streamCsv(string $filename, array $headers, iterable $rows): StreamedResponse
     {
         return response()->streamDownload(function () use ($headers, $rows) {
@@ -34,41 +28,125 @@ trait HasCsvIO
     }
 
     /**
-     * Parse an uploaded CSV into an array of associative rows keyed by header name.
+     * Read CSV or Excel into associative rows keyed by original header labels.
      *
      * @return array<int, array<string, string>>
      */
     protected function readCsv(UploadedFile $file): array
     {
-        $rows = [];
-        $handle = fopen($file->getRealPath(), 'r');
-        $header = fgetcsv($handle);
+        return $this->readSpreadsheet($file);
+    }
 
-        if ($header) {
-            // normalise header names: trim + collapse case so "Name" / "name" both work
-            $header = array_map(fn ($h) => trim((string) $h), $header);
+    /**
+     * Parse uploaded CSV / XLSX / XLS into rows keyed by header name.
+     *
+     * @return array<int, array<string, string>>
+     *
+     * @throws ValidationException
+     */
+    protected function readSpreadsheet(UploadedFile $file, array $requiredHeaders = []): array
+    {
+        $ext = strtolower($file->getClientOriginalExtension());
 
-            while (($data = fgetcsv($handle)) !== false) {
-                if (count($data) !== count($header)) {
-                    continue; // skip malformed rows rather than fail the whole import
+        try {
+            if (in_array($ext, ['xlsx', 'xls'], true)) {
+                $sheets = Excel::toArray(null, $file);
+                if (empty($sheets) || empty($sheets[0])) {
+                    throw ValidationException::withMessages([
+                        'file' => 'The uploaded Excel file is empty or invalid.',
+                    ]);
                 }
-                $rows[] = array_combine($header, $data);
+                $raw = $sheets[0];
+                $header = array_map(fn ($h) => trim((string) $h), array_shift($raw) ?: []);
+                if ($header === [] || (count($header) === 1 && $header[0] === '')) {
+                    throw ValidationException::withMessages([
+                        'file' => 'The uploaded file has no header row. Please use a valid template.',
+                    ]);
+                }
+                $rows = [];
+                foreach ($raw as $data) {
+                    // skip fully empty rows
+                    if (collect($data)->filter(fn ($v) => $v !== null && $v !== '')->isEmpty()) {
+                        continue;
+                    }
+                    // pad/truncate to header length
+                    $data = array_pad(array_slice($data, 0, count($header)), count($header), null);
+                    $rows[] = array_combine($header, array_map(fn ($v) => $v === null ? '' : (string) $v, $data));
+                }
+            } else {
+                $rows = [];
+                $handle = fopen($file->getRealPath(), 'r');
+                if ($handle === false) {
+                    throw ValidationException::withMessages([
+                        'file' => 'Unable to read the uploaded file.',
+                    ]);
+                }
+                $header = fgetcsv($handle);
+                if (! $header) {
+                    fclose($handle);
+                    throw ValidationException::withMessages([
+                        'file' => 'The uploaded file has no header row. Please use a valid template.',
+                    ]);
+                }
+                $header = array_map(fn ($h) => trim((string) $h), $header);
+                while (($data = fgetcsv($handle)) !== false) {
+                    if (collect($data)->filter(fn ($v) => $v !== null && $v !== '')->isEmpty()) {
+                        continue;
+                    }
+                    $data = array_pad(array_slice($data, 0, count($header)), count($header), '');
+                    $rows[] = array_combine($header, $data);
+                }
+                fclose($handle);
             }
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            throw ValidationException::withMessages([
+                'file' => 'Invalid file format. Please upload a valid CSV or Excel file with the correct columns.',
+            ]);
         }
 
-        fclose($handle);
+        if ($requiredHeaders !== []) {
+            $this->assertRequiredHeaders($header ?? [], $requiredHeaders);
+        }
 
         return $rows;
     }
 
     /**
-     * Case-insensitive lookup of a value from a parsed CSV row.
+     * @param  array<int, string>  $headerKeys
+     * @param  array<int, string|array<int, string>>  $requiredHeaders
      */
+    protected function assertRequiredHeaders(array $headerKeys, array $requiredHeaders): void
+    {
+        $normalized = array_map(fn ($k) => strtolower(trim((string) $k)), $headerKeys);
+        $missing = [];
+        foreach ($requiredHeaders as $need) {
+            $found = false;
+            foreach ((array) $need as $alias) {
+                if (in_array(strtolower((string) $alias), $normalized, true)) {
+                    $found = true;
+                    break;
+                }
+            }
+            if (! $found) {
+                $missing[] = is_array($need) ? $need[0] : $need;
+            }
+        }
+
+        if ($missing !== []) {
+            throw ValidationException::withMessages([
+                'file' => 'Invalid column names. Missing required column(s): '.implode(', ', $missing).'. Please download a sample export and use the same headers.',
+            ]);
+        }
+    }
+
     protected function csvValue(array $row, string $key): ?string
     {
         foreach ($row as $k => $v) {
-            if (strcasecmp($k, $key) === 0) {
-                return $v !== '' ? $v : null;
+            if (strcasecmp((string) $k, $key) === 0) {
+                $v = is_string($v) ? trim($v) : $v;
+                return ($v === '' || $v === null) ? null : (string) $v;
             }
         }
 

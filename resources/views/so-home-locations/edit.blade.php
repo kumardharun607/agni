@@ -16,9 +16,7 @@
 
 <div class="bg-white rounded-xl shadow-sm p-6">
 
-    <form action="{{ route('so-home-locations.update',$soHomeLocation- data-ajax-skip>id) }}"
-          method="POST"
-          >
+    <form action="{{ route('so-home-locations.update', $soHomeLocation->id) }}" method="POST" data-ajax-skip>
 
         @csrf
         @method('PUT')

@@ -3,61 +3,29 @@
 namespace App\Exports;
 
 use App\Models\Brand;
-use Maatwebsite\Excel\Concerns\FromQuery;
+use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class BrandsExport implements FromQuery, WithHeadings, WithMapping
+class BrandsExport implements FromCollection, WithHeadings, WithMapping
 {
-    /**
-     * Export only active brands.
-     *
-     * Soft deleted brands are automatically excluded
-     * by the Brand model's SoftDeletes trait.
-     */
-    public function query()
+    public function collection()
     {
-        return Brand::query()
-            ->select([
-                'id',
-                'name',
-                'created_at',
-                'updated_at',
-            ])
-            ->latest('id');
+        return Brand::orderBy('id')->get();
     }
 
-    /**
-     * Excel column headings.
-     */
     public function headings(): array
     {
-        return [
-            'S.No',
-            'Brand Name',
-            'Created At',
-            'Updated At',
-        ];
+        return ['id', 'name', 'created_at', 'updated_at'];
     }
 
-    /**
-     * Map database records to Excel rows.
-     */
-    public function map($brand): array
+    public function map($row): array
     {
-        static $serialNumber = 0;
-
-        $serialNumber++;
-
         return [
-            $serialNumber,
-            $brand->name,
-            $brand->created_at
-                ? $brand->created_at->format('d-m-Y h:i A')
-                : '-',
-            $brand->updated_at
-                ? $brand->updated_at->format('d-m-Y h:i A')
-                : '-',
+            $row->id,
+            $row->name,
+            optional($row->created_at)?->toDateTimeString(),
+            optional($row->updated_at)?->toDateTimeString(),
         ];
     }
 }

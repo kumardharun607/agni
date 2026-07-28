@@ -111,7 +111,7 @@ class BdeHomeLocationController extends Controller
 
             return response()->json([
 
-                'status' => true,
+                'success' => true, 'status' => true,
 
                 'message' => 'BDE Home Location Deleted Successfully'
 

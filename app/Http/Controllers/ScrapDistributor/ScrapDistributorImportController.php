@@ -3,11 +3,18 @@
 namespace App\Http\Controllers\ScrapDistributor;
 
 use App\Http\Controllers\Controller;
+<<<<<<< HEAD
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\ScrapDistributorImport;
+=======
+>>>>>>> b1d09de9960bbbdde66a81dfd9cc085dec352046
 use App\Exports\ScrapDistributorExport;
+use App\Imports\ScrapDistributorImport;
+use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ScrapDistributorImportController extends Controller
 {
@@ -19,10 +26,11 @@ class ScrapDistributorImportController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'file' => 'required|mimes:xlsx,xls,csv'
+            'file' => 'required|file|mimes:xlsx,xls,csv',
         ]);
 
         try {
+<<<<<<< HEAD
             Excel::import(
                 new ScrapDistributorImport,
                 $request->file('file')
@@ -55,13 +63,22 @@ class ScrapDistributorImportController extends Controller
             }
             return back()->with('error', 'Import failed: ' . $msg);
         }
+=======
+            Excel::import(new ScrapDistributorImport, $request->file('file'));
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors());
+        } catch (\Throwable $e) {
+            return back()->withErrors([
+                'file' => 'Invalid file or column names. Please export Scrap Distributors first and use the same column headers (name is required).',
+            ]);
+        }
+
+        return redirect()->route('scrap-distributors.index')->with('success', 'Scrap Distributors imported successfully.');
+>>>>>>> b1d09de9960bbbdde66a81dfd9cc085dec352046
     }
 
     public function export()
     {
-        return Excel::download(
-            new ScrapDistributorExport,
-            'scrap_distributors.xlsx'
-        );
+        return Excel::download(new ScrapDistributorExport, 'scrap_distributors.xlsx');
     }
 }

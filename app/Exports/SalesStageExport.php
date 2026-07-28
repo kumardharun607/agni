@@ -11,16 +11,21 @@ class SalesStageExport implements FromCollection, WithHeadings, WithMapping
 {
     public function collection()
     {
-        return SalesStage::orderBy('name')->get();
+        return SalesStage::orderBy('id')->get();
     }
 
     public function headings(): array
     {
-        return ['ID', 'Name'];
+        return ['id', 'name', 'created_at', 'updated_at'];
     }
 
-    public function map($s): array
+    public function map($row): array
     {
-        return [$s->id, $s->name];
+        return [
+            $row->id,
+            $row->name,
+            optional($row->created_at)?->toDateTimeString(),
+            optional($row->updated_at)?->toDateTimeString(),
+        ];
     }
 }

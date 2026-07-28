@@ -3,49 +3,29 @@
 namespace App\Exports;
 
 use App\Models\FloorStage;
-use Maatwebsite\Excel\Concerns\FromQuery;
+use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class FloorStagesExport implements FromQuery, WithHeadings, WithMapping
+class FloorStagesExport implements FromCollection, WithHeadings, WithMapping
 {
-    public function query()
+    public function collection()
     {
-        return FloorStage::query()
-            ->select([
-                'id',
-                'name',
-                'created_at',
-                'updated_at',
-            ])
-            ->latest('id');
+        return FloorStage::orderBy('id')->get();
     }
 
     public function headings(): array
     {
-        return [
-            'S.No',
-            'Floor Stage Name',
-            'Created At',
-            'Updated At',
-        ];
+        return ['id', 'name', 'created_at', 'updated_at'];
     }
 
-    public function map($floorStage): array
+    public function map($row): array
     {
-        static $serialNumber = 0;
-
-        $serialNumber++;
-
         return [
-            $serialNumber,
-            $floorStage->name,
-            $floorStage->created_at
-                ? $floorStage->created_at->format('d-m-Y h:i A')
-                : '-',
-            $floorStage->updated_at
-                ? $floorStage->updated_at->format('d-m-Y h:i A')
-                : '-',
+            $row->id,
+            $row->name,
+            optional($row->created_at)?->toDateTimeString(),
+            optional($row->updated_at)?->toDateTimeString(),
         ];
     }
 }

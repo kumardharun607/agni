@@ -118,22 +118,135 @@ class DealerMappingController extends Controller
     public function import(Request $request)
     {
         $request->validate(['file' => 'required|file|mimes:csv,txt,xlsx,xls']);
-        $rows = $this->readCsv($request->file('file'));
 
-        $count = 0;
-        foreach ($rows as $row) {
-            $dealerAlias = $this->csvValue($row, 'Dealer Alias ID');
-            $bdeEmpCode = $this->csvValue($row, 'BDE Emp Code');
-            $dealer = $dealerAlias ? Dealer::where('alias_id', $dealerAlias)->first() : null;
-            $bde = $bdeEmpCode ? User::where('emp_code', $bdeEmpCode)->first() : null;
-            if (! $dealer || ! $bde) {
-                continue;
+        try {
+            $rows = $this->readSpreadsheet($request->file('file'), [
+                ['Dealer Alias ID', 'dealer_alias_id', 'alias_id'],
+                ['BDE Emp Code', 'bde_emp_code', 'emp_code'],
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $msg = collect($e->errors())->flatten()->first() ?: 'Invalid import file.';
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
             }
-            $this->service->firstOrCreate(['dealer_id' => $dealer->id, 'bde_id' => $bde->id]);
-            $count++;
+            return back()->withErrors(['file' => $msg]);
         }
 
-        $message = "$count dealer mappings imported successfully.";
+        $count = 0;
+        $duplicates = [];
+        $notFound = [];
+        $restored = 0;
+
+        foreach ($rows as $row) {
+            $dealerAlias = $this->csvValue($row, 'Dealer Alias ID')
+                ?: $this->csvValue($row, 'dealer_alias_id')
+                ?: $this->csvValue($row, 'alias_id');
+            $bdeEmpCode = $this->csvValue($row, 'BDE Emp Code')
+                ?: $this->csvValue($row, 'bde_emp_code')
+                ?: $this->csvValue($row, 'emp_code');
+
+            if (! $dealerAlias || ! $bdeEmpCode) {
+                continue;
+            }
+
+            $dealerAlias = trim((string) $dealerAlias);
+            $bdeEmpCode = trim((string) $bdeEmpCode);
+
+            $dealer = Dealer::where('alias_id', $dealerAlias)->first();
+            $bde = User::where('emp_code', $bdeEmpCode)->first();
+
+            if (! $dealer || ! $bde) {
+                $parts = [];
+                if (! $dealer) {
+                    $parts[] = "Dealer Alias ID '{$dealerAlias}' not found";
+                }
+                if (! $bde) {
+                    $parts[] = "BDE Emp Code '{$bdeEmpCode}' not found";
+                }
+                $notFound[] = implode(' and ', $parts);
+                continue;
+            }
+
+            // Live mapping already exists
+            $live = DealerMapping::where('dealer_id', $dealer->id)
+                ->where('bde_id', $bde->id)
+                ->first();
+            if ($live) {
+                $duplicates[] = "{$dealerAlias} -> {$bdeEmpCode}";
+                continue;
+            }
+
+            // Soft-deleted mapping for same pair -> restore (clears deleted_at)
+            $trashed = DealerMapping::onlyTrashed()
+                ->where('dealer_id', $dealer->id)
+                ->where('bde_id', $bde->id)
+                ->first();
+            if ($trashed) {
+                $trashed->restore();
+                $restored++;
+                $count++;
+                continue;
+            }
+
+            try {
+                $this->service->create([
+                    'dealer_id' => $dealer->id,
+                    'bde_id' => $bde->id,
+                ]);
+                $count++;
+            } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+                $trashed = DealerMapping::onlyTrashed()
+                    ->where('dealer_id', $dealer->id)
+                    ->where('bde_id', $bde->id)
+                    ->first();
+                if ($trashed) {
+                    $trashed->restore();
+                    $restored++;
+                    $count++;
+                } else {
+                    $duplicates[] = "{$dealerAlias} -> {$bdeEmpCode}";
+                }
+            }
+        }
+
+        if ($count === 0 && ! empty($duplicates) && empty($notFound)) {
+            $message = 'These dealer mappings already exist and cannot be imported: ' . implode(', ', array_unique($duplicates));
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 422);
+            }
+            return back()->withErrors(['file' => $message]);
+        }
+
+        if ($count === 0 && ! empty($notFound)) {
+            $message = implode('; ', array_unique($notFound));
+            if (! empty($duplicates)) {
+                $message .= '. Also already exist: ' . implode(', ', array_unique($duplicates));
+            }
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 422);
+            }
+            return back()->withErrors(['file' => $message]);
+        }
+
+        if ($count === 0) {
+            $message = 'No valid rows found to import. Required columns: Dealer Alias ID, BDE Emp Code (both must already exist in the system).';
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 422);
+            }
+            return back()->withErrors(['file' => $message]);
+        }
+
+        $message = $count . ' dealer mapping(s) imported successfully.';
+        if ($restored > 0) {
+            $message .= ' (' . $restored . ' previously deleted mapping(s) restored.)';
+        }
+        if (! empty($duplicates)) {
+            $message .= ' Skipped (already exist): ' . implode(', ', array_unique($duplicates));
+        }
+        if (! empty($notFound)) {
+            $message .= ' Skipped (not found): ' . implode('; ', array_unique($notFound));
+        }
+
         if ($request->expectsJson()) {
             return response()->json(['success' => true, 'message' => $message]);
         }
