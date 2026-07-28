@@ -18,8 +18,8 @@
     table.grid th, table.grid td { border: 1px solid #94a3b8; padding: 4px 7px; font-size: 9.5px; text-align: left; }
     table.grid th { background: #f1f5f9; font-weight: bold; color: #334155; }
     .images-row { width: 100%; margin-top: 4px; }
-    .images-row td { text-align: center; border: 1px solid #94a3b8; padding: 8px; width: 50%; }
-    .images-row img { width: 150px; height: 110px; object-fit: cover; border: 1px solid #cbd5e1; }
+    .images-row td { text-align: center; border: 1px solid #94a3b8; padding: 10px; width: 50%; vertical-align: middle; height: 200px; }
+    .images-row img { width: 240px; height: 170px; object-fit: contain; border: 1px solid #cbd5e1; }
     .no-image { font-size: 9.5px; color: #94a3b8; }
     .footer-note { position: fixed; bottom: -18px; left: 0; right: 0; text-align: center; font-size: 8.5px; color: #94a3b8; }
 </style>
