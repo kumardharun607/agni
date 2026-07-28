@@ -133,7 +133,7 @@ class UserController extends Controller
             $rows = $this->readSpreadsheet($request->file('file'), [
                 ['Emp Code', 'emp_code'],
                 ['Name', 'name'],
-                ['Role', 'role'],
+                ['Role', 'role', 'Role ID', 'role_id'],  // name or id accepted
                 ['Mobile', 'mobile'],
                 ['Email', 'email'],
             ]);
@@ -150,13 +150,39 @@ class UserController extends Controller
         $skipped = 0;
 
         foreach ($rows as $row) {
-            $empCode = $this->csvValue($row, 'Emp Code') ?: $this->csvValue($row, 'emp_code');
-            $name = $this->csvValue($row, 'Name') ?: $this->csvValue($row, 'name');
-            $mobile = $this->csvValue($row, 'Mobile') ?: $this->csvValue($row, 'mobile');
-            $email = $this->csvValue($row, 'Email') ?: $this->csvValue($row, 'email');
-            $roleName = $this->csvValue($row, 'Role') ?: $this->csvValue($row, 'role');
+            // Support both simple import template and full export format
+            $empCode = $this->csvValue($row, 'Emp Code');
+            if ($empCode === null) {
+                $empCode = $this->csvValue($row, 'emp_code');
+            }
+            $name = $this->csvValue($row, 'Name');
+            if ($name === null) {
+                $name = $this->csvValue($row, 'name');
+            }
+            $mobile = $this->csvValue($row, 'Mobile');
+            if ($mobile === null) {
+                $mobile = $this->csvValue($row, 'mobile');
+            }
+            $email = $this->csvValue($row, 'Email');
+            if ($email === null) {
+                $email = $this->csvValue($row, 'email');
+            }
+            $roleName = $this->csvValue($row, 'Role');
+            if ($roleName === null) {
+                $roleName = $this->csvValue($row, 'role');
+            }
+            $roleId = $this->csvValue($row, 'Role ID');
+            if ($roleId === null) {
+                $roleId = $this->csvValue($row, 'role_id');
+            }
+            $plainPassword = $this->csvValue($row, 'Plain Password');
+            if ($plainPassword === null) {
+                $plainPassword = $this->csvValue($row, 'plain_password');
+            }
 
-            if (! $empCode || ! $name || ! $mobile || ! $email) {
+            // Use explicit null/empty checks so Emp Code "0" is valid
+            if ($empCode === null || $empCode === '' || $name === null || $name === ''
+                || $mobile === null || $mobile === '' || $email === null || $email === '') {
                 $skipped++;
                 continue;
             }
@@ -165,9 +191,17 @@ class UserController extends Controller
             $name = trim((string) $name);
             $mobile = trim((string) $mobile);
             $email = trim((string) $email);
-            $roleName = $roleName ? trim((string) $roleName) : null;
+            $roleName = ($roleName !== null && $roleName !== '') ? trim((string) $roleName) : null;
+            $roleId = ($roleId !== null && $roleId !== '') ? trim((string) $roleId) : null;
 
-            $role = $roleName ? Role::where('name', $roleName)->first() : null;
+            // Resolve role by ID (export format) or by name (simple template)
+            $role = null;
+            if ($roleId !== null && is_numeric($roleId)) {
+                $role = Role::find((int) $roleId);
+            }
+            if (! $role && $roleName) {
+                $role = Role::where('name', $roleName)->first();
+            }
             if (! $role) {
                 $skipped++;
                 continue;
@@ -215,7 +249,7 @@ class UserController extends Controller
                     'role_id' => $role->id,
                     'mobile' => $mobile,
                     'email' => $email,
-                    'plain_password' => Str::random(10),
+                    'plain_password' => ($plainPassword !== null && $plainPassword !== '') ? $plainPassword : Str::random(10),
                 ]);
                 $imported++;
             } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
